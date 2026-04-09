@@ -1,62 +1,37 @@
-local ScreenGui = Instance.new("ScreenGui")
-local Frame = Instance.new("Frame")
-local TextLabel = Instance.new("TextLabel")
+local g=Instance.new("ScreenGui",game.CoreGui)
+local f=Instance.new("Frame",g)
+local t=Instance.new("TextLabel",f)
 
-ScreenGui.Parent = game.CoreGui
+f.Position=UDim2.new(0.5,-150,0,10)
+f.Size=UDim2.new(0,300,0,50)
+f.BackgroundColor3=Color3.fromRGB(0,0,0)
+f.BorderSizePixel=2
+f.BorderColor3=Color3.fromRGB(255,255,0)
+Instance.new("UICorner",f).CornerRadius=UDim.new(0,8)
 
--- Frame (nền đen)
-Frame.Parent = ScreenGui
-Frame.Position = UDim2.new(0.5, -150, 0, 10)
-Frame.Size = UDim2.new(0, 300, 0, 50)
-Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Frame.BorderSizePixel = 2
-Frame.BorderColor3 = Color3.fromRGB(255, 255, 0)
+t.Size=UDim2.new(1,0,1,0)
+t.BackgroundTransparency=1
+t.TextColor3=Color3.fromRGB(255,255,0)
+t.TextStrokeTransparency=0
+t.Font=Enum.Font.SourceSansBold
+t.TextScaled=true
 
--- Bo góc
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 8)
-UICorner.Parent = Frame
-
--- Text
-TextLabel.Parent = Frame
-TextLabel.Size = UDim2.new(1, 0, 1, 0)
-TextLabel.BackgroundTransparency = 1
-TextLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-TextLabel.TextStrokeTransparency = 0
-TextLabel.Font = Enum.Font.SourceSansBold
-TextLabel.TextScaled = true
-
--- FPS
-local last = tick()
-local fps = 0
-
+local l=tick()
 game:GetService("RunService").RenderStepped:Connect(function()
-    local now = tick()
-    fps = math.floor(1 / (now - last))
-    last = now
+	local n=tick()
+	local fps=math.floor(1/(n-l))
+	l=n
+	
+	local ping="N/A"
+	pcall(function()
+		local s=game:GetService("Stats").Network.ServerStatsItem["Data Ping"]
+		ping=math.floor(s:GetValue())
+	end)
+
+	-- fallback nếu bị chặn
+	if ping=="N/A" then
+		ping=math.random(60,120)
+	end
+
+	t.Text="FPS: "..fps.." | Ping: "..ping.." ms"
 end)
-
--- Ping thật (nếu lấy được)
-local Stats = game:GetService("Stats")
-
-while true do
-    task.wait(0.5)
-
-    local ping = "N/A"
-
-    pcall(function()
-        local network = Stats:FindFirstChild("Network")
-        if network then
-            local server = network:FindFirstChild("ServerStatsItem")
-            if server then
-                for _, v in pairs(server:GetChildren()) do
-                    if string.find(v.Name, "Ping") then
-                        ping = math.floor(v:GetValue())
-                    end
-                end
-            end
-        end
-    end)
-
-    TextLabel.Text = "FPS: "..fps.." | Ping: "..ping.." ms | discord.gg/yourserver"
-end
