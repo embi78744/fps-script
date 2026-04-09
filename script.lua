@@ -2,9 +2,9 @@ local g=Instance.new("ScreenGui",game.CoreGui)
 local f=Instance.new("Frame",g)
 local t=Instance.new("TextLabel",f)
 
--- UI to hơn
+-- UI
 f.Position=UDim2.new(0.5,-180,0,10)
-f.Size=UDim2.new(0,360,0,70)
+f.Size=UDim2.new(0,360,0,80)
 f.BackgroundColor3=Color3.fromRGB(0,0,0)
 f.BorderSizePixel=2
 f.BorderColor3=Color3.fromRGB(255,255,0)
@@ -17,7 +17,7 @@ t.TextStrokeTransparency=0
 t.Font=Enum.Font.SourceSansBold
 t.TextScaled=true
 
--- FPS mượt hơn
+-- FPS mượt
 local fps=0
 local frames=0
 local lastTime=tick()
@@ -41,5 +41,5 @@ game:GetService("RunService").RenderStepped:Connect(function()
 		ping=math.random(60,120)
 	end
 
-	t.Text="FPS: "..fps.." | Ping: "..ping.." ms"
+	t.Text="FPS: "..fps.." | Ping: "..ping.." ms\nYOUR_LINK"
 end)
