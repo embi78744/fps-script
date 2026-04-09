@@ -4,9 +4,9 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
--- Khởi tạo GUI
+-- GUI Setup
 local sg = Instance.new("ScreenGui", game.CoreGui)
-sg.Name = "BaAnhStatsUI_PotatoVersion"
+sg.Name = "BaAnhStatsUI_Fixed"
 
 local mainFrame = Instance.new("Frame", sg)
 mainFrame.Size = UDim2.new(0, 240, 0, 175)
@@ -27,7 +27,7 @@ uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 local titleLabel = Instance.new("TextLabel", mainFrame)
 titleLabel.Size = UDim2.new(1, 0, 0, 30)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "🌸 MAKE BY tobi bell"
+titleLabel.Text = "🌸 MAKE BY BAANH"
 titleLabel.TextColor3 = Color3.fromRGB(255, 182, 193)
 titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 18
@@ -41,7 +41,6 @@ local layout = Instance.new("UIListLayout", contentFrame)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 5)
 
--- Hàm tạo Label
 local function createInfoLabel(parent, text, color)
     local label = Instance.new("TextLabel", parent)
     label.Size = UDim2.new(1, 0, 0, 18)
@@ -56,7 +55,7 @@ end
 
 createInfoLabel(contentFrame, "Tên: " .. LocalPlayer.Name)
 
--- ĐƠN
+-- Đơn Input
 local donContainer = Instance.new("Frame", contentFrame)
 donContainer.Size = UDim2.new(1, 0, 0, 20)
 donContainer.BackgroundTransparency = 1
@@ -82,7 +81,7 @@ donInput.ClearTextOnFocus = false
 local fpsLabel = createInfoLabel(contentFrame, "FPS: 0")
 local pingLabel = createInfoLabel(contentFrame, "Ping: 0 ms")
 
--- CHỨC NĂNG POTATO PC (FIX LAG)
+-- FIX LAG BUTTON (POTATO MODE)
 local isOptimized = false
 local fixLagBtn = Instance.new("TextButton", contentFrame)
 fixLagBtn.Size = UDim2.new(1, 0, 0, 22)
@@ -93,30 +92,40 @@ fixLagBtn.Font = Enum.Font.SourceSansBold
 fixLagBtn.TextSize = 16
 fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Bảng lưu trữ material gốc để khôi phục
+local materialHistory = {}
+
 local function SetPotatoMode(state)
     if state then
-        -- Chế độ Potato: Tắt hết hiệu ứng nặng
+        -- BẬT POTATO
         settings().Rendering.QualityLevel = 1
         Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
+        
         for _, v in pairs(game:GetDescendants()) do
             if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
-                v.Material = Enum.Material.SmoothPlastic -- Biến mọi thứ thành nhựa phẳng
+                -- Lưu lại material gốc trước khi đổi
+                materialHistory[v] = v.Material
+                v.Material = Enum.Material.SmoothPlastic
             elseif v:IsA("Decal") or v:IsA("Texture") then
-                v.Transparency = 1 -- Xóa texture (vật thể sẽ trơn lùi)
+                -- Thay vì xóa hoàn toàn (Transparency=1), ta chỉ làm mờ đi một chút để tránh lỗi engine
+                v.LocalTransparencyModifier = 0.8
             end
         end
     else
-        -- Chế độ bình thường (Khôi phục cơ bản)
-        settings().Rendering.QualityLevel = 0 -- Auto
+        -- TẮT POTATO (KHÔI PHỤC)
+        settings().Rendering.QualityLevel = 0
         Lighting.GlobalShadows = true
+        
+        for v, originalMaterial in pairs(materialHistory) do
+            if v and v.Parent then
+                v.Material = originalMaterial
+            end
+        end
+        materialHistory = {} -- Xóa bảng nhớ sau khi khôi phục xong
+
         for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
-                -- Lưu ý: Khôi phục material gốc rất khó nếu không lưu từ đầu, 
-                -- nên ở đây ta trả về Plastic mặc định của game.
-                v.Material = Enum.Material.Plastic 
-            elseif v:IsA("Decal") or v:IsA("Texture") then
-                v.Transparency = 0
+            if v:IsA("Decal") or v:IsA("Texture") then
+                v.LocalTransparencyModifier = 0 -- Hiện lại hoàn toàn
             end
         end
     end
@@ -135,7 +144,7 @@ fixLagBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Update FPS/Ping
+-- Logic Update FPS/Ping
 local fps, frames, lastTime = 0, 0, tick()
 RunService.RenderStepped:Connect(function()
     frames = frames + 1
