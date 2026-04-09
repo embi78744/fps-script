@@ -3,147 +3,157 @@ local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
--- Khởi tạo giao diện chính
 local sg = Instance.new("ScreenGui", game.CoreGui)
-sg.Name = "BaAnh_Potato_Hub"
+sg.Name = "NguoiTinhMuaDong_V18_Ultimate"
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 240, 0, 280)
+mainFrame.Size = UDim2.new(0, 240, 0, 520) 
 mainFrame.Position = UDim2.new(0.5, -120, 0, 10)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true 
 
-local corner = Instance.new("UICorner", mainFrame)
-corner.CornerRadius = UDim.new(0, 10)
-
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
 local uiStroke = Instance.new("UIStroke", mainFrame)
 uiStroke.Color = Color3.fromRGB(255, 105, 180)
-uiStroke.Thickness = 2
+uiStroke.Thickness = 2.5
 
 -- Tiêu đề
 local title = Instance.new("TextLabel", mainFrame)
-title.Size = UDim2.new(1, 0, 0, 35)
+title.Size = UDim2.new(1, -40, 0, 35)
+title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "🌸 MAKE BY BAANH"
+title.Text = "🌸 MADE BY NGUOITINHMUADONG"
 title.TextColor3 = Color3.fromRGB(255, 182, 193)
 title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18
+title.TextSize = 13
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Nút thu gọn
+local isMinimized = false
+local miniBtn = Instance.new("TextButton", mainFrame)
+miniBtn.Size = UDim2.new(0, 25, 0, 25)
+miniBtn.Position = UDim2.new(1, -35, 0, 5)
+miniBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+miniBtn.Text = "-"
+miniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", miniBtn).CornerRadius = UDim.new(0, 6)
 
 local content = Instance.new("Frame", mainFrame)
 content.Size = UDim2.new(1, -20, 1, -45)
 content.Position = UDim2.new(0, 10, 0, 40)
 content.BackgroundTransparency = 1
 
-local layout = Instance.new("UIListLayout", content)
-layout.Padding = UDim.new(0, 6)
+miniBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    content.Visible = not isMinimized
+    mainFrame:TweenSize(isMinimized and UDim2.new(0, 240, 0, 35) or UDim2.new(0, 240, 0, 520), "Out", "Quart", 0.3, true)
+    miniBtn.Text = isMinimized and "+" or "-"
+end)
 
--- Hàm tạo nhãn và nút
-local function createLabel(text, color)
-    local l = Instance.new("TextLabel", content)
-    l.Size = UDim2.new(1, 0, 0, 20)
-    l.BackgroundTransparency = 1
-    l.Text = text
-    l.TextColor3 = color or Color3.fromRGB(255, 255, 255)
-    l.Font = Enum.Font.SourceSansBold
-    l.TextSize = 15
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    return l
+local currentY = 0
+local function addComp(obj, height)
+    obj.Parent = content
+    obj.Position = UDim2.new(0, 0, 0, currentY)
+    currentY = currentY + height + 5
 end
 
 local function createBtn(text, color)
-    local b = Instance.new("TextButton", content)
-    b.Size = UDim2.new(1, 0, 0, 25)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 28)
     b.BackgroundColor3 = color or Color3.fromRGB(45, 45, 45)
     b.Text = text
     b.TextColor3 = Color3.fromRGB(255, 255, 255)
     b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 14
+    b.TextSize = 12
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     return b
 end
 
--- Hiển thị thông tin
-createLabel("Tên: " .. LocalPlayer.Name)
-local donInput = Instance.new("TextBox", content)
-donInput.Size = UDim2.new(1, 0, 0, 20)
-donInput.BackgroundTransparency = 1
-donInput.Text = "Đơn: don tk"
-donInput.TextColor3 = Color3.fromRGB(255, 255, 100)
-donInput.Font = Enum.Font.SourceSansBold
-donInput.TextSize = 15
-donInput.TextXAlignment = Enum.TextXAlignment.Left
-
-local fpsL = createLabel("FPS: 0")
-local pingL = createLabel("Ping: 0 ms")
-
--- CHỨC NĂNG POTATO (FIX LỖI HIỂN THỊ)
-local isPotato = false
-local potBtn = createBtn("Đồ họa: BÌNH THƯỜNG ❌", Color3.fromRGB(80, 20, 20))
-local history = {}
-
-local function togglePotato(state)
-    if state then
-        -- Kích hoạt Potato Mode
-        settings().Rendering.QualityLevel = 1
-        Lighting.GlobalShadows = false
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
-                history[v] = v.Material
-                v.Material = Enum.Material.SmoothPlastic
-            elseif v:IsA("Decal") or v:IsA("Texture") then
-                v.LocalTransparencyModifier = 0.8 -- Làm mờ texture thay vì xóa hẳn
-            end
-        end
-    else
-        -- Khôi phục đồ họa cũ
-        settings().Rendering.QualityLevel = 0
-        Lighting.GlobalShadows = true
-        for v, mat in pairs(history) do
-            if v and v.Parent then v.Material = mat end
-        end
-        history = {}
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("Decal") or v:IsA("Texture") then
-                v.LocalTransparencyModifier = 0
-            end
-        end
-    end
+local function createLabel(text, color)
+    local l = Instance.new("TextLabel")
+    l.Size = UDim2.new(1, 0, 0, 18)
+    l.BackgroundTransparency = 1
+    l.Text = text
+    l.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+    l.Font = Enum.Font.SourceSansBold
+    l.TextSize = 13
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    return l
 end
 
-potBtn.MouseButton1Click:Connect(function()
-    isPotato = not isPotato
-    if isPotato then
-        potBtn.Text = "Đồ họa: POTATO ✅"
-        potBtn.BackgroundColor3 = Color3.fromRGB(20, 80, 20)
-        togglePotato(true)
-    else
-        potBtn.Text = "Đồ họa: BÌNH THƯỜNG ❌"
-        potBtn.BackgroundColor3 = Color3.fromRGB(80, 20, 20)
-        togglePotato(false)
+-- --- THIẾT LẬP CÁC NÚT (FIXED LAYOUT) ---
+local antiBtn = createBtn("1. Anti AFK: ON ✅", Color3.fromRGB(30, 100, 30))
+addComp(antiBtn, 28)
+
+local potBtn = createBtn("2. Đồ họa: BÌNH THƯỜNG ❌", Color3.fromRGB(80, 20, 20))
+addComp(potBtn, 28)
+
+addComp(createBtn("4. Làm sạch Map (Clear) ✨"), 28)
+addComp(createBtn("5. White Screen: OFF 🔋"), 28)
+
+-- Ô NHẬP JOBID CỐ ĐỊNH (KHÔNG BAO GIỜ MẤT)
+local joinInput = Instance.new("TextBox")
+joinInput.Size = UDim2.new(1, 0, 0, 28)
+joinInput.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+joinInput.PlaceholderText = "Nhập JobID..."
+joinInput.Text = ""
+joinInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", joinInput).CornerRadius = UDim.new(0, 4)
+addComp(joinInput, 28)
+
+addComp(createBtn("JOIN SERVER THEO ID"), 28)
+addComp(createBtn("Rejoin Server"), 28)
+addComp(createBtn("COPY LINK DISCORD 💬", Color3.fromRGB(88, 101, 242)), 28)
+
+-- Thông số
+local nameL = createLabel("Tên: " .. LocalPlayer.Name) addComp(nameL, 18)
+local fpsL = createLabel("FPS: --") addComp(fpsL, 18)
+local pingL = createLabel("Ping: -- ms") addComp(pingL, 18)
+local timeL = createLabel("3. Giờ: --") addComp(timeL, 18)
+local dcLabel = createLabel("Discord: discord.gg/abcxyz", Color3.fromRGB(114, 137, 218)) addComp(dcLabel, 18)
+addComp(createLabel("--- TIỆN ÍCH ---", Color3.fromRGB(255, 105, 180)), 18)
+
+-- --- LOGIC ĐO FPS CHUẨN 100% ---
+local fpsCount = 0
+RunService.Heartbeat:Connect(function()
+    fpsCount = fpsCount + 1
+end)
+
+task.spawn(function()
+    while true do
+        local startCount = fpsCount
+        task.wait(1) -- Đo trong đúng 1 giây
+        local currentFps = fpsCount - startCount
+        fpsL.Text = "FPS: " .. currentFps
+        
+        -- Cập nhật thêm các thông số khác mỗi giây
+        timeL.Text = "3. Giờ: " .. os.date("%H:%M:%S")
+        local p = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+        pingL.Text = "Ping: " .. p .. " ms"
     end
 end)
 
--- Nhóm nút Tiện ích
-createLabel("--- TIỆN ÍCH ---", Color3.fromRGB(255, 105, 180))
-createBtn("Rejoin Server").MouseButton1Click:Connect(function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-end)
-
-createBtn("Copy JobID").MouseButton1Click:Connect(function()
-    setclipboard(tostring(game.JobId))
-end)
-
--- Cập nhật FPS/Ping liên tục
-RunService.RenderStepped:Connect(function()
-    local fps = math.floor(1 / RunService.RenderStepped:Wait())
-    fpsL.Text = "FPS: " .. fps
-    local p = 0
-    pcall(function() p = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
-    if p <= 0 then pcall(function() p = math.floor(LocalPlayer:GetNetworkPing() * 1000) end) end
-    pingL.Text = "Ping: " .. p .. " ms"
+-- --- LOGIC POTATO (FIXED) ---
+local isPotato = false
+potBtn.MouseButton1Click:Connect(function()
+    isPotato = not isPotato
+    potBtn.Text = isPotato and "2. Đồ họa: POTATO ✅" or "2. Đồ họa: BÌNH THƯỜNG ❌"
+    potBtn.BackgroundColor3 = isPotato and Color3.fromRGB(20, 80, 20) or Color3.fromRGB(80, 20, 20)
+    if isPotato then
+        settings().Rendering.QualityLevel = 1
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("Part") or v:IsA("MeshPart") then v.Material = Enum.Material.SmoothPlastic end
+            if v:IsA("Decal") then v.Transparency = 1 end
+        end
+    else
+        settings().Rendering.QualityLevel = 0
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("Part") or v:IsA("MeshPart") then v.Material = Enum.Material.Plastic end
+            if v:IsA("Decal") then v.Transparency = 0 end
+        end
+    end
 end)
