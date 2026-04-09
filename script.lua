@@ -120,7 +120,7 @@ local nameL = createLabel("Tên: " .. LocalPlayer.Name)
 local fpsL = createLabel("FPS: --")
 local pingL = createLabel("Ping: -- ms")
 local timeL = createLabel("3. Giờ: --")
-local dcLinkL = createLabel("Discord: discord.gg/abcxyz", Color3.fromRGB(114, 137, 218))
+local dcLinkL = createLabel("Discord: https://discord.gg/sh5ontop", Color3.fromRGB(114, 137, 218))
 createLabel("--- TIỆN ÍCH ---", Color3.fromRGB(255, 105, 180))
 
 -- --- [5] XỬ LÝ LOGIC CHI TIẾT ---
@@ -183,7 +183,7 @@ end)
 
 -- Chức năng Copy Discord
 dcBtn.MouseButton1Click:Connect(function()
-    setclipboard("discord.gg/abcxyz")
+    setclipboard("https://discord.gg/sh5ontop")
     dcBtn.Text = "ĐÃ COPY LINK! ✅"
     task.wait(1)
     dcBtn.Text = "COPY LINK DISCORD 💬"
