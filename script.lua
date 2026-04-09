@@ -1,78 +1,118 @@
 local g=Instance.new("ScreenGui",game.CoreGui)
-local f=Instance.new("Frame",g)
-local t=Instance.new("TextLabel",f)
+local main=Instance.new("Frame",g)
+local topbar=Instance.new("Frame",main)
+local title=Instance.new("TextLabel",topbar)
 
--- UI
-f.Position=UDim2.new(0.5,-180,0,10)
-f.Size=UDim2.new(0,360,0,120)
-f.BackgroundColor3=Color3.fromRGB(0,0,0)
-f.BorderSizePixel=2
-f.BorderColor3=Color3.fromRGB(255,255,0)
-Instance.new("UICorner",f).CornerRadius=UDim.new(0,12)
+-- MAIN UI
+main.Size=UDim2.new(0,400,0,250)
+main.Position=UDim2.new(0.5,-200,0.5,-125)
+main.BackgroundColor3=Color3.fromRGB(15,15,15)
+main.BorderSizePixel=0
+Instance.new("UICorner",main).CornerRadius=UDim.new(0,12)
 
-t.Size=UDim2.new(1,0,0.4,0)
-t.BackgroundTransparency=1
-t.TextColor3=Color3.fromRGB(255,255,0)
-t.TextStrokeTransparency=0
-t.Font=Enum.Font.SourceSansBold
-t.TextScaled=true
+-- TOPBAR
+topbar.Size=UDim2.new(1,0,0,40)
+topbar.BackgroundColor3=Color3.fromRGB(20,20,20)
+Instance.new("UICorner",topbar).CornerRadius=UDim.new(0,12)
 
--- Graph container
-local graph=Instance.new("Frame",f)
-graph.Position=UDim2.new(0,10,0.45,0)
-graph.Size=UDim2.new(1,-20,0.5,0)
-graph.BackgroundTransparency=1
+title.Size=UDim2.new(1,0,1,0)
+title.BackgroundTransparency=1
+title.Text="🔥 FPS HUB"
+title.TextColor3=Color3.fromRGB(255,255,0)
+title.Font=Enum.Font.SourceSansBold
+title.TextScaled=true
 
--- FPS data
-local fps=0
-local displayFPS=0
-local frames=0
-local last=tick()
-local values={}
+-- DRAG
+local dragging=false
+local dragStart,startPos
 
--- tạo cột graph
-local bars={}
-for i=1,30 do
-	local b=Instance.new("Frame",graph)
-	b.Size=UDim2.new(0,8,1,0)
-	b.Position=UDim2.new((i-1)/30,0,1,0)
-	b.AnchorPoint=Vector2.new(0,1)
-	b.BackgroundColor3=Color3.fromRGB(0,255,0)
-	table.insert(bars,b)
-end
-
-game:GetService("RunService").RenderStepped:Connect(function()
-	frames += 1
-
-	-- tính fps mỗi 0.5s
-	if tick()-last >= 0.5 then
-		fps = frames * 2
-		frames = 0
-		last = tick()
-
-		table.insert(values, fps)
-		if #values > 30 then table.remove(values,1) end
-	end
-
-	-- smooth fps (lerp)
-	displayFPS = displayFPS + (fps - displayFPS) * 0.1
-
-	local ping = math.random(60,120)
-
-	t.Text = "FPS: "..math.floor(displayFPS).." | Ping: "..ping.." ms\n\ndiscord.gg/yourlink"
-
-	-- update graph
-	for i,v in ipairs(values) do
-		local h = math.clamp(v/120,0,1)
-		bars[i].Size = UDim2.new(0,8,h,0)
-
-		-- đổi màu theo fps
-		if v > 60 then
-			bars[i].BackgroundColor3=Color3.fromRGB(0,255,0)
-		elseif v > 30 then
-			bars[i].BackgroundColor3=Color3.fromRGB(255,170,0)
-		else
-			bars[i].BackgroundColor3=Color3.fromRGB(255,0,0)
-		end
+topbar.InputBegan:Connect(function(i)
+	if i.UserInputType==Enum.UserInputType.MouseButton1 then
+		dragging=true
+		dragStart=i.Position
+		startPos=main.Position
 	end
 end)
+
+topbar.InputEnded:Connect(function(i)
+	if i.UserInputType==Enum.UserInputType.MouseButton1 then
+		dragging=false
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(i)
+	if dragging and i.UserInputType==Enum.UserInputType.MouseMovement then
+		local delta=i.Position-dragStart
+		main.Position=UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset+delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset+delta.Y
+		)
+	end
+end)
+
+-- CONTENT
+local content=Instance.new("Frame",main)
+content.Position=UDim2.new(0,0,0,45)
+content.Size=UDim2.new(1,0,1,-45)
+content.BackgroundTransparency=1
+
+-- FPS TEXT
+local info=Instance.new("TextLabel",content)
+info.Size=UDim2.new(1,0,0.4,0)
+info.BackgroundTransparency=1
+info.TextColor3=Color3.fromRGB(255,255,0)
+info.Font=Enum.Font.SourceSansBold
+info.TextScaled=true
+
+-- DISCORD
+local discord=Instance.new("TextLabel",content)
+discord.Position=UDim2.new(0,0,0.4,0)
+discord.Size=UDim2.new(1,0,0.2,0)
+discord.BackgroundTransparency=1
+discord.TextColor3=Color3.fromRGB(114,137,218)
+discord.Text="discord.gg/yourlink"
+discord.Font=Enum.Font.SourceSansBold
+discord.TextScaled=true
+
+-- TOGGLE BUTTON
+local btn=Instance.new("TextButton",content)
+btn.Position=UDim2.new(0.25,0,0.7,0)
+btn.Size=UDim2.new(0.5,0,0.2,0)
+btn.Text="Toggle FPS: ON"
+btn.BackgroundColor3=Color3.fromRGB(30,30,30)
+btn.TextColor3=Color3.fromRGB(255,255,255)
+btn.Font=Enum.Font.SourceSansBold
+btn.TextScaled=true
+Instance.new("UICorner",btn).CornerRadius=UDim.new(0,8)
+
+local show=true
+btn.MouseButton1Click:Connect(function()
+	show=not show
+	btn.Text="Toggle FPS: "..(show and "ON" or "OFF")
+end)
+
+-- FPS SYSTEM
+local fps=0
+local frames=0
+local last=tick()
+
+game:GetService("RunService").RenderStepped:Connect(function()
+	frames+=1
+end)
+
+while true do
+	task.wait(0.5)
+
+	fps=frames*2
+	frames=0
+
+	local ping=math.random(60,120)
+
+	if show then
+		info.Text="FPS: "..fps.." | Ping: "..ping.." ms"
+	else
+		info.Text="(hidden)"
+	end
+end
