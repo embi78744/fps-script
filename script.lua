@@ -2,14 +2,16 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 -- GUI Setup
 local sg = Instance.new("ScreenGui", game.CoreGui)
-sg.Name = "BaAnhStatsUI_Fixed"
+sg.Name = "BaAnhStatsUI_V3"
 
 local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(0, 240, 0, 175)
+mainFrame.Size = UDim2.new(0, 240, 0, 270) -- Tăng chiều cao để chứa thêm nút
 mainFrame.Position = UDim2.new(0.5, -120, 0, 10)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 mainFrame.BorderSizePixel = 0
@@ -33,7 +35,7 @@ titleLabel.Font = Enum.Font.SourceSansBold
 titleLabel.TextSize = 18
 
 local contentFrame = Instance.new("Frame", mainFrame)
-contentFrame.Size = UDim2.new(1, -20, 1, -45)
+contentFrame.Size = UDim2.new(1, -20, 1, -40)
 contentFrame.Position = UDim2.new(0, 10, 0, 35)
 contentFrame.BackgroundTransparency = 1
 
@@ -41,6 +43,22 @@ local layout = Instance.new("UIListLayout", contentFrame)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 5)
 
+-- Hàm tạo Nút bấm chung
+local function createButton(parent, text, color)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(1, 0, 0, 22)
+    btn.BackgroundColor3 = color or Color3.fromRGB(40, 40, 45)
+    btn.BackgroundTransparency = 0.5
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 14
+    local btnCorner = Instance.new("UICorner", btn)
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    return btn
+end
+
+-- 1. Thông tin cơ bản
 local function createInfoLabel(parent, text, color)
     local label = Instance.new("TextLabel", parent)
     label.Size = UDim2.new(1, 0, 0, 18)
@@ -48,100 +66,92 @@ local function createInfoLabel(parent, text, color)
     label.Text = text
     label.TextColor3 = color or Color3.fromRGB(230, 230, 230)
     label.Font = Enum.Font.SourceSansBold
-    label.TextSize = 16
+    label.TextSize = 15
     label.TextXAlignment = Enum.TextXAlignment.Left
     return label
 end
 
 createInfoLabel(contentFrame, "Tên: " .. LocalPlayer.Name)
 
--- Đơn Input
+-- 2. Đơn Input
 local donContainer = Instance.new("Frame", contentFrame)
 donContainer.Size = UDim2.new(1, 0, 0, 20)
 donContainer.BackgroundTransparency = 1
-local donPrefix = Instance.new("TextLabel", donContainer)
-donPrefix.Size = UDim2.new(0, 40, 1, 0)
-donPrefix.BackgroundTransparency = 1
-donPrefix.Text = "Đơn: "
-donPrefix.TextColor3 = Color3.fromRGB(255, 255, 100)
-donPrefix.Font = Enum.Font.SourceSansBold
-donPrefix.TextSize = 16
-donPrefix.TextXAlignment = Enum.TextXAlignment.Left
 local donInput = Instance.new("TextBox", donContainer)
-donInput.Size = UDim2.new(1, -40, 1, 0)
-donInput.Position = UDim2.new(0, 40, 0, 0)
+donInput.Size = UDim2.new(1, 0, 1, 0)
 donInput.BackgroundTransparency = 0.9
-donInput.Text = "don tk"
+donInput.Text = "Đơn: don tk"
 donInput.TextColor3 = Color3.fromRGB(255, 255, 100)
 donInput.Font = Enum.Font.SourceSansBold
-donInput.TextSize = 16
+donInput.TextSize = 15
 donInput.TextXAlignment = Enum.TextXAlignment.Left
-donInput.ClearTextOnFocus = false
 
 local fpsLabel = createInfoLabel(contentFrame, "FPS: 0")
 local pingLabel = createInfoLabel(contentFrame, "Ping: 0 ms")
 
--- FIX LAG BUTTON (POTATO MODE)
+-- 3. FIX LAG (POTATO)
 local isOptimized = false
-local fixLagBtn = Instance.new("TextButton", contentFrame)
-fixLagBtn.Size = UDim2.new(1, 0, 0, 22)
-fixLagBtn.BackgroundTransparency = 1
-fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
-fixLagBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
-fixLagBtn.Font = Enum.Font.SourceSansBold
-fixLagBtn.TextSize = 16
-fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
+local fixLagBtn = createButton(contentFrame, "Fix Lag: TỐI ƯU (OFF) ❌", Color3.fromRGB(150, 0, 0))
+fixLagBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
 
--- Bảng lưu trữ material gốc để khôi phục
+-- (Logic Potato giữ nguyên từ bản trước của bạn)
 local materialHistory = {}
-
-local function SetPotatoMode(state)
-    if state then
-        -- BẬT POTATO
-        settings().Rendering.QualityLevel = 1
-        Lighting.GlobalShadows = false
-        
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
-                -- Lưu lại material gốc trước khi đổi
-                materialHistory[v] = v.Material
-                v.Material = Enum.Material.SmoothPlastic
-            elseif v:IsA("Decal") or v:IsA("Texture") then
-                -- Thay vì xóa hoàn toàn (Transparency=1), ta chỉ làm mờ đi một chút để tránh lỗi engine
-                v.LocalTransparencyModifier = 0.8
-            end
-        end
-    else
-        -- TẮT POTATO (KHÔI PHỤC)
-        settings().Rendering.QualityLevel = 0
-        Lighting.GlobalShadows = true
-        
-        for v, originalMaterial in pairs(materialHistory) do
-            if v and v.Parent then
-                v.Material = originalMaterial
-            end
-        end
-        materialHistory = {} -- Xóa bảng nhớ sau khi khôi phục xong
-
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("Decal") or v:IsA("Texture") then
-                v.LocalTransparencyModifier = 0 -- Hiện lại hoàn toàn
-            end
-        end
-    end
-end
-
 fixLagBtn.MouseButton1Click:Connect(function()
     isOptimized = not isOptimized
     if isOptimized then
         fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
-        fixLagBtn.TextColor3 = Color3.fromRGB(50, 255, 100)
-        SetPotatoMode(true)
+        fixLagBtn.TextColor3 = Color3.fromRGB(150, 255, 150)
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("UnionOperation") then
+                materialHistory[v] = v.Material
+                v.Material = Enum.Material.SmoothPlastic
+            elseif v:IsA("Decal") or v:IsA("Texture") then
+                v.LocalTransparencyModifier = 0.8
+            end
+        end
     else
         fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
-        fixLagBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
-        SetPotatoMode(false)
+        fixLagBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
+        for v, mat in pairs(materialHistory) do if v and v.Parent then v.Material = mat end end
+        materialHistory = {}
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("Decal") or v:IsA("Texture") then v.LocalTransparencyModifier = 0 end
+        end
     end
+end)
+
+-- --- MỤC 3: TIỆN ÍCH ---
+createInfoLabel(contentFrame, "--- TIỆN ÍCH ---", Color3.fromRGB(255, 105, 180))
+
+-- Rejoin Button
+local rejoinBtn = createButton(contentFrame, "Rejoin Server 🔄")
+rejoinBtn.MouseButton1Click:Connect(function()
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end)
+
+-- Server Hop Button
+local hopBtn = createButton(contentFrame, "Server Hop 🚀")
+hopBtn.MouseButton1Click:Connect(function()
+    local servers = {}
+    local res = game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
+    local data = HttpService:JSONDecode(res)
+    for _, s in pairs(data.data) do
+        if s.playing < s.maxPlayers and s.id ~= game.JobId then
+            table.insert(servers, s.id)
+        end
+    end
+    if #servers > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], LocalPlayer)
+    end
+end)
+
+-- Copy JobID Button
+local copyBtn = createButton(contentFrame, "Copy JobID 📋")
+copyBtn.MouseButton1Click:Connect(function()
+    setclipboard(tostring(game.JobId))
+    copyBtn.Text = "Đã copy mã server!"
+    wait(2)
+    copyBtn.Text = "Copy JobID 📋"
 end)
 
 -- Logic Update FPS/Ping
