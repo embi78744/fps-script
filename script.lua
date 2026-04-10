@@ -1,8 +1,8 @@
 --[[
-    🌸 NGUOITINHMUADONG - V56 MANUAL OPTIMIZE
-    - Mặc định Fix Lag là OFF (Đồ họa bình thường).
-    - Có thể di chuyển UI (Draggable).
-    - Khi tắt tối ưu, đồ họa sẽ cố gắng quay về mặc định.
+    🌸 NGUOITINHMUADONG - V57 AI EDITION
+    - Header: MAKE BY AI.
+    - Mặc định Fix Lag là OFF.
+    - UI có thể di chuyển (Draggable).
 ]]
 
 local Players = game:GetService("Players")
@@ -11,14 +11,14 @@ local Stats = game:GetService("Stats")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Xóa UI cũ
+-- Dọn dẹp bản cũ
 for _, v in pairs(game.CoreGui:GetChildren()) do
-    if v.Name == "NGUOITINH_MANUAL_V56" then v:Destroy() end
+    if v.Name == "NGUOITINH_AI_V57" then v:Destroy() end
 end
 
-local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_MANUAL_V56"
+local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_AI_V57"
 
--- --- KHUNG CHÍNH DI CHUYỂN ĐƯỢC ---
+-- --- KHUNG CHÍNH (DI CHUYỂN ĐƯỢC) ---
 local main = Instance.new("Frame", sg)
 main.Size = UDim2.new(0, 260, 0, 190)
 main.Position = UDim2.new(0.5, -130, 0.4, 0)
@@ -47,10 +47,10 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- NỘI DUNG ---
+-- --- NỘI DUNG (GIỐNG HỆT ẢNH MẪU) ---
 local header = Instance.new("TextLabel", main)
 header.Size = UDim2.new(1, 0, 0, 35); header.BackgroundTransparency = 1
-header.Text = "🌸 MAKE BY BAANH"; header.TextColor3 = Color3.fromRGB(255, 182, 193)
+header.Text = "🌸 MAKE BY AI"; header.TextColor3 = Color3.fromRGB(255, 182, 193)
 header.TextSize = 16; header.Font = Enum.Font.SourceSansBold
 
 local function createL(txt, y, color)
@@ -61,46 +61,33 @@ local function createL(txt, y, color)
     return l
 end
 
+-- Thông tin tài khoản & Thông số
 local maskName = string.sub(LocalPlayer.Name, 1, 3) .. "******"
 createL("Tên: " .. maskName, 40)
 local donL = createL("Đơn: don tk", 65, Color3.fromRGB(255, 255, 0))
 local fpsL = createL("FPS: 0", 90)
 local pingL = createL("Ping: 0 ms", 115)
 
--- NÚT FIX LAG (MẶC ĐỊNH LÀ OFF)
+-- NÚT FIX LAG (MẶC ĐỊNH OFF)
 local fixLagBtn = Instance.new("TextButton", main)
 fixLagBtn.Size = UDim2.new(1, -30, 0, 30); fixLagBtn.Position = UDim2.new(0, 15, 0, 145)
-fixLagBtn.BackgroundTransparency = 1
-fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
-fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
-fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold
+fixLagBtn.BackgroundTransparency = 1; fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
+fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0); fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold
 fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
 
-local optActive = false 
+local optActive = false
 fixLagBtn.MouseButton1Click:Connect(function()
     optActive = not optActive
     if optActive then
-        -- KHI BẬT (ON)
-        fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
-        fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
-        settings().Rendering.QualityLevel = 1
-        for _, v in pairs(game:GetDescendants()) do 
-            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end 
-            if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
-        end
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"; fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
+        for _, v in pairs(game:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end end
     else
-        -- KHI TẮT (OFF) - QUAY LẠI BÌNH THƯỜNG
-        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
-        fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
-        settings().Rendering.QualityLevel = 0 -- Auto
-        for _, v in pairs(game:GetDescendants()) do 
-            if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end 
-            if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 0 end
-        end
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"; fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+        for _, v in pairs(game:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end end
     end
 end)
 
--- CẬP NHẬT THÔNG SỐ
+-- CẬP NHẬT FPS/PING
 local lastUpdate = os.clock(); local frames = 0
 RunService.Heartbeat:Connect(function()
     frames = frames + 1
