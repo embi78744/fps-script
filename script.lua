@@ -1,9 +1,9 @@
 --[[
-    🌸 NGUOITINHMUADONG - V60 ULTIMATE AI OPTIMIZER (IMPROVED)
-    - Tiêu đề: MAKE BY AI (Cải thiện bởi Copilot).
-    - Chế độ Tối ưu: Xóa hiệu ứng kỹ năng, Particles, Beam, Trails (Fix triệt để lag hiệu ứng).
-    - Tính năng: Draggable, Sửa Đơn trực tiếp, Anti AFK ngầm, UI cải thiện, nút đóng.
-    - Cải thiện: Tổ chức code tốt hơn, xử lý lỗi cơ bản, tối ưu hóa chi tiết hơn.
+    🌸 NGUOITINHMUADONG - V60 ULTIMATE AI OPTIMIZER (FULLY IMPROVED)
+    - Tiêu đề: MAKE BY AI (Cải thiện đầy đủ bởi Copilot).
+    - Chế độ Tối ưu: Toggle chi tiết hiệu ứng, Particles, Beam, Trails, Shadows (Fix lag hiệu ứng).
+    - Tính năng: Draggable, Sửa Đơn, Anti AFK, UI mở rộng, nút đóng, reset, keybind (F), thông báo, mobile support.
+    - Cải thiện: Tổ chức code, xử lý lỗi, tối ưu hiệu suất, cache để tránh loop thừa.
 ]]
 
 local Players = game:GetService("Players")
@@ -11,7 +11,24 @@ local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local VirtualUser = game:GetService("VirtualUser")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+
+-- Biến cache và trạng thái
+local cachedDescendants = {}
+local particlesEnabled = true
+local shadowsEnabled = true
+local optActive = false
+
+-- Hàm cache descendants (chỉ loop 1 lần)
+local function cacheDescendants()
+    cachedDescendants = {}
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("BasePart") then
+            table.insert(cachedDescendants, v)
+        end
+    end
+end
 
 -- Hàm xóa UI cũ
 local function clearOldUI()
@@ -28,8 +45,8 @@ local function createMainUI()
     sg.Name = "NGUOITINH_AI_V60"
 
     local main = Instance.new("Frame", sg)
-    main.Size = UDim2.new(0, 280, 0, 220)  -- Tăng kích thước cho thêm nút
-    main.Position = UDim2.new(0.5, -140, 0.4, 0)
+    main.Size = UDim2.new(0, 320, 0, 350)  -- Tăng kích thước cho nhiều nút
+    main.Position = UDim2.new(0.5, -160, 0.4, 0)
     main.BackgroundColor3 = Color3.fromRGB(20, 25, 30)
     main.BackgroundTransparency = 0.1
     Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
@@ -40,7 +57,7 @@ local function createMainUI()
     -- Logic Kéo Thả
     local dragging, dragInput, dragStart, startPos
     main.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or (UserInputService.TouchEnabled and input.UserInputType == Enum.UserInputType.Touch) then
             dragging = true
             dragStart = input.Position
             startPos = main.Position
@@ -52,7 +69,7 @@ local function createMainUI()
         end
     end)
     main.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if input.UserInputType == Enum.UserInputType.MouseMovement or (UserInputService.TouchEnabled and input.UserInputType == Enum.UserInputType.Touch) then
             dragInput = input
         end
     end)
@@ -109,15 +126,15 @@ local function createButton(parent, text, position, color)
     return btn
 end
 
--- Hàm tối ưu hóa đồ họa
+-- Hàm tối ưu hóa đồ họa (sử dụng cache)
 local function optimizeGraphics(enable)
     if enable then
         settings().Rendering.QualityLevel = 1
         Lighting.GlobalShadows = false
-        for _, v in pairs(game:GetDescendants()) do
-            pcall(function()  -- Xử lý lỗi cơ bản
+        for _, v in ipairs(cachedDescendants) do
+            pcall(function()
                 if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
-                    v.Enabled = false
+                    if not particlesEnabled then v.Enabled = false end
                 elseif v:IsA("BasePart") then
                     v.Material = Enum.Material.SmoothPlastic
                 end
@@ -125,17 +142,71 @@ local function optimizeGraphics(enable)
         end
     else
         settings().Rendering.QualityLevel = 0
-        Lighting.GlobalShadows = true
-        for _, v in pairs(game:GetDescendants()) do
+        Lighting.GlobalShadows = shadowsEnabled
+        for _, v in ipairs(cachedDescendants) do
             pcall(function()
                 if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
-                    v.Enabled = true
+                    v.Enabled = particlesEnabled
                 elseif v:IsA("BasePart") then
                     v.Material = Enum.Material.Plastic
                 end
             end)
         end
     end
+end
+
+-- Hàm toggle particles
+local function toggleParticles(btn)
+    particlesEnabled = not particlesEnabled
+    btn.Text = "Particles: " .. (particlesEnabled and "ON ✅" or "OFF ❌")
+    btn.TextColor3 = particlesEnabled and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 69, 0)
+    if optActive then optimizeGraphics(true) end
+    showNotification("Particles " .. (particlesEnabled and "bật" or "tắt"))
+end
+
+-- Hàm toggle shadows
+local function toggleShadows(btn)
+    shadowsEnabled = not shadowsEnabled
+    btn.Text = "Shadows: " .. (shadowsEnabled and "ON ✅" or "OFF ❌")
+    btn.TextColor3 = shadowsEnabled and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 69, 0)
+    Lighting.GlobalShadows = shadowsEnabled
+    showNotification("Shadows " .. (shadowsEnabled and "bật" or "tắt"))
+end
+
+-- Hàm reset
+local function resetSettings(btnParticles, btnShadows, btnOpt)
+    particlesEnabled = true
+    shadowsEnabled = true
+    optActive = false
+    btnParticles.Text = "Particles: ON ✅"
+    btnParticles.TextColor3 = Color3.fromRGB(0, 255, 127)
+    btnShadows.Text = "Shadows: ON ✅"
+    btnShadows.TextColor3 = Color3.fromRGB(0, 255, 127)
+    btnOpt.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
+    btnOpt.TextColor3 = Color3.fromRGB(255, 69, 0)
+    optimizeGraphics(false)
+    showNotification("Đã reset cài đặt")
+end
+
+-- Hàm thông báo
+local notificationLabel
+local function showNotification(text)
+    if not notificationLabel then
+        notificationLabel = Instance.new("TextLabel", game.CoreGui:FindFirstChild("NGUOITINH_AI_V60"))
+        notificationLabel.Size = UDim2.new(0, 200, 0, 50)
+        notificationLabel.Position = UDim2.new(0.5, -100, 0.8, 0)
+        notificationLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        notificationLabel.BackgroundTransparency = 0.5
+        notificationLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        notificationLabel.TextSize = 20
+        notificationLabel.Font = Enum.Font.SourceSansBold
+        notificationLabel.TextXAlignment = Enum.TextXAlignment.Center
+        Instance.new("UICorner", notificationLabel).CornerRadius = UDim.new(0, 10)
+    end
+    notificationLabel.Text = text
+    notificationLabel.Visible = true
+    wait(2)
+    notificationLabel.Visible = false
 end
 
 -- Hàm cập nhật stats
@@ -155,10 +226,11 @@ end
 
 -- Main script
 clearOldUI()
+cacheDescendants()  -- Cache 1 lần
 local main = createMainUI()
 
 -- Header
-local header = createLabel(main, "🌸 MAKE BY AI (Cải thiện)", UDim2.new(0, 0, 0, 10), Color3.fromRGB(255, 182, 193))
+local header = createLabel(main, "🌸 MAKE BY AI (Full Improved)", UDim2.new(0, 0, 0, 10), Color3.fromRGB(255, 182, 193))
 header.Size = UDim2.new(1, 0, 0, 35)
 header.TextXAlignment = Enum.TextXAlignment.Center
 
@@ -184,19 +256,39 @@ local donInp = createTextBox(main, "don tk", UDim2.new(0, 55, 0, 75), Color3.fro
 local fpsL = createLabel(main, "FPS: 0", UDim2.new(0, 15, 0, 105))
 local pingL = createLabel(main, "Ping: 0 ms", UDim2.new(0, 15, 0, 130))
 
--- Nút tối ưu
-local fixLagBtn = createButton(main, "Fix Lag: TỐI ƯU (OFF) ❌", UDim2.new(0, 15, 0, 165), Color3.fromRGB(255, 69, 0))
-local optActive = false
+-- Nút toggle particles
+local particlesBtn = createButton(main, "Particles: ON ✅", UDim2.new(0, 15, 0, 160), Color3.fromRGB(0, 255, 127))
+particlesBtn.MouseButton1Click:Connect(function() toggleParticles(particlesBtn) end)
+
+-- Nút toggle shadows
+local shadowsBtn = createButton(main, "Shadows: ON ✅", UDim2.new(0, 15, 0, 195), Color3.fromRGB(0, 255, 127))
+shadowsBtn.MouseButton1Click:Connect(function() toggleShadows(shadowsBtn) end)
+
+-- Nút tối ưu chính
+local fixLagBtn = createButton(main, "Fix Lag: TỐI ƯU (OFF) ❌", UDim2.new(0, 15, 0, 230), Color3.fromRGB(255, 69, 0))
 fixLagBtn.MouseButton1Click:Connect(function()
     optActive = not optActive
     if optActive then
         fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
         fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
         optimizeGraphics(true)
+        showNotification("Tối ưu lag bật")
     else
         fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
         fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
         optimizeGraphics(false)
+        showNotification("Tối ưu lag tắt")
+    end
+end)
+
+-- Nút reset
+local resetBtn = createButton(main, "Reset Cài Đặt", UDim2.new(0, 15, 0, 265), Color3.fromRGB(255, 215, 0))
+resetBtn.MouseButton1Click:Connect(function() resetSettings(particlesBtn, shadowsBtn, fixLagBtn) end)
+
+-- Keybind (F key)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.F then
+        fixLagBtn:Fire()  -- Simulate click
     end
 end)
 
