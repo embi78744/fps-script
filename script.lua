@@ -12,6 +12,9 @@ local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local VirtualUser = game:GetService("VirtualUser")
 local SoundService = game:GetService("SoundService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Hàm tạo âm thanh click
 local function playClickSound()
@@ -20,44 +23,76 @@ local function playClickSound()
     sound.Volume = 0.5
     sound.Parent = SoundService
     sound:Play()
-    sound.Ended:Wait()
-    sound:Destroy()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
 end
 
 -- Biến cache và trạng thái
-local cachedDescendants = {}
+local cachedEffects = {}
+local cachedLights = {}
+local cachedParts = {}
+local cachedDecals = {}
+local cachedLightingEffects = {}
 local particlesEnabled = true
 local shadowsEnabled = true
 local optActive = false
+local originalQuality = settings().Rendering.QualityLevel
+local originalShadows = Lighting.GlobalShadows
+local originalOutdoorAmbient = Lighting.OutdoorAmbient
+local originalAmbient = Lighting.Ambient
+local originalFogStart = Lighting.FogStart
+local originalFogEnd = Lighting.FogEnd
+local originalFogColor = Lighting.FogColor
+local originalBrightness = Lighting.Brightness
+local originalEnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale
+local originalEnvironmentSpecularScale = Lighting.EnvironmentSpecularScale
 
 -- Hàm cache descendants (chỉ loop 1 lần)
 local function cacheDescendants()
-    cachedDescendants = {}
+    cachedEffects = {}
+    cachedLights = {}
+    cachedParts = {}
+    cachedDecals = {}
+    cachedLightingEffects = {}
     for _, v in pairs(game:GetDescendants()) do
-        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("BasePart") then
-            table.insert(cachedDescendants, v)
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") or v:IsA("Smoke") or v:IsA("Flame") then
+            table.insert(cachedEffects, v)
+        elseif v:IsA("PointLight") or v:IsA("SurfaceLight") or v:IsA("SpotLight") then
+            table.insert(cachedLights, v)
+        elseif v:IsA("Decal") or v:IsA("Texture") then
+            table.insert(cachedDecals, v)
+        elseif v:IsA("BasePart") then
+            table.insert(cachedParts, v)
+        elseif v:IsA("Atmosphere") or v:IsA("Sky") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("DepthOfFieldEffect") then
+            table.insert(cachedLightingEffects, v)
         end
     end
 end
 
 -- Hàm xóa UI cũ
 local function clearOldUI()
-    for _, v in pairs(game.CoreGui:GetChildren()) do
-        if v.Name == "NGUOITINH_AI_V60" then
-            v:Destroy()
+    for _, container in pairs({game.CoreGui, PlayerGui}) do
+        for _, v in pairs(container:GetChildren()) do
+            if v.Name == "NGUOITINH_AI_V60" then
+                v:Destroy()
+            end
         end
     end
 end
 
 -- Hàm tạo UI chính
 local function createMainUI()
-    local sg = Instance.new("ScreenGui", game.CoreGui)
+    local sg = Instance.new("ScreenGui")
     sg.Name = "NGUOITINH_AI_V60"
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.Parent = PlayerGui
 
     local main = Instance.new("Frame", sg)
-    main.Size = UDim2.new(0.25, 0, 0.4, 0)  -- Responsive: 25% width, 40% height
-    main.Position = UDim2.new(0.5, 0, 0.4, 0)
-    main.AnchorPoint = Vector2.new(0.5, 0.4)  -- Center
+    main.Size = UDim2.new(0, 400, 0, 380)
+    main.Position = UDim2.new(0.5, 0, 0.2, 0)
+    main.AnchorPoint = Vector2.new(0.5, 0)
     main.BackgroundColor3 = Color3.fromRGB(20, 25, 30)
     main.BackgroundTransparency = 0.1
     Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
@@ -126,41 +161,126 @@ end
 -- Hàm tạo Button
 local function createButton(parent, text, position, color)
     local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, -30, 0, 30)
+    btn.Size = UDim2.new(1, -30, 0, 40)
     btn.Position = position
     btn.BackgroundTransparency = 1
+    btn.AutoButtonColor = true
     btn.Text = text
     btn.TextColor3 = color or Color3.fromRGB(255, 69, 0)
-    btn.TextSize = 18
+    btn.TextSize = 15
+    btn.TextScaled = false
+    btn.TextWrapped = true
+    btn.TextTruncate = Enum.TextTruncate.AtEnd
     btn.Font = Enum.Font.SourceSansBold
     btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.TextYAlignment = Enum.TextYAlignment.Center
     return btn
 end
 
+local function applyParticleState(enabled)
+    for _, v in ipairs(cachedEffects) do
+        pcall(function()
+            v.Enabled = enabled
+        end)
+    end
+end
+
+local function applyLightingState(enable)
+    if enable then
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB(20, 20, 20)
+        Lighting.Ambient = Color3.fromRGB(20, 20, 20)
+        Lighting.FogStart = 0
+        Lighting.FogEnd = 80
+        Lighting.FogColor = Color3.fromRGB(15, 15, 15)
+        Lighting.Brightness = 0.2
+        Lighting.EnvironmentDiffuseScale = 0
+        Lighting.EnvironmentSpecularScale = 0
+    else
+        Lighting.GlobalShadows = shadowsEnabled and originalShadows or false
+        Lighting.OutdoorAmbient = originalOutdoorAmbient
+        Lighting.Ambient = originalAmbient
+        Lighting.FogStart = originalFogStart
+        Lighting.FogEnd = originalFogEnd
+        Lighting.FogColor = originalFogColor
+        Lighting.Brightness = originalBrightness
+        Lighting.EnvironmentDiffuseScale = originalEnvironmentDiffuseScale
+        Lighting.EnvironmentSpecularScale = originalEnvironmentSpecularScale
+    end
+end
+
 -- Hàm tối ưu hóa đồ họa (sử dụng cache)
+local function applyLightingEffectsState(enable)
+    for _, v in ipairs(cachedLightingEffects) do
+        pcall(function()
+            v.Enabled = enable
+        end)
+    end
+end
+
 local function optimizeGraphics(enable)
     if enable then
-        settings().Rendering.QualityLevel = 1
-        Lighting.GlobalShadows = false
-        for _, v in ipairs(cachedDescendants) do
+        settings().Rendering.QualityLevel = 0
+        applyLightingState(true)
+        applyParticleState(false)
+        applyLightingEffectsState(false)
+
+        local terrain = workspace:FindFirstChildOfClass("Terrain")
+        if terrain then
             pcall(function()
-                if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
-                    if not particlesEnabled then v.Enabled = false end
-                elseif v:IsA("BasePart") then
-                    v.Material = Enum.Material.SmoothPlastic
-                end
+                terrain.WaterWaveSize = 0
+                terrain.WaterWaveSpeed = 0
+                terrain.WaterReflectance = 0
+                terrain.WaterTransparency = 1
+            end)
+        end
+
+        for _, v in ipairs(cachedParts) do
+            pcall(function()
+                v.Material = Enum.Material.SmoothPlastic
+                v.CastShadow = false
+            end)
+        end
+        for _, v in ipairs(cachedLights) do
+            pcall(function()
+                v.Enabled = false
+            end)
+        end
+        for _, v in ipairs(cachedDecals) do
+            pcall(function()
+                v.Transparency = 1
             end)
         end
     else
-        settings().Rendering.QualityLevel = 0
-        Lighting.GlobalShadows = shadowsEnabled
-        for _, v in ipairs(cachedDescendants) do
+        settings().Rendering.QualityLevel = originalQuality
+        applyLightingState(false)
+        applyParticleState(particlesEnabled)
+        applyLightingEffectsState(true)
+
+        local terrain = workspace:FindFirstChildOfClass("Terrain")
+        if terrain then
             pcall(function()
-                if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
-                    v.Enabled = particlesEnabled
-                elseif v:IsA("BasePart") then
-                    v.Material = Enum.Material.Plastic
-                end
+                terrain.WaterWaveSize = 0.5
+                terrain.WaterWaveSpeed = 0.5
+                terrain.WaterReflectance = 0.5
+                terrain.WaterTransparency = 0
+            end)
+        end
+
+        for _, v in ipairs(cachedParts) do
+            pcall(function()
+                v.Material = Enum.Material.Plastic
+                v.CastShadow = true
+            end)
+        end
+        for _, v in ipairs(cachedLights) do
+            pcall(function()
+                v.Enabled = true
+            end)
+        end
+        for _, v in ipairs(cachedDecals) do
+            pcall(function()
+                v.Transparency = 0
             end)
         end
     end
@@ -171,6 +291,7 @@ local function toggleParticles(btn)
     particlesEnabled = not particlesEnabled
     btn.Text = "Particles: " .. (particlesEnabled and "ON ✅" or "OFF ❌")
     btn.TextColor3 = particlesEnabled and Color3.fromRGB(0, 255, 127) or Color3.fromRGB(255, 69, 0)
+    applyParticleState(particlesEnabled)
     if optActive then optimizeGraphics(true) end
     showNotification("Particles " .. (particlesEnabled and "bật" or "tắt"))
 end
@@ -203,7 +324,7 @@ end
 local notificationLabel
 local function showNotification(text)
     if not notificationLabel then
-        notificationLabel = Instance.new("TextLabel", game.CoreGui:FindFirstChild("NGUOITINH_AI_V60"))
+        notificationLabel = Instance.new("TextLabel", PlayerGui:FindFirstChild("NGUOITINH_AI_V60"))
         notificationLabel.Size = UDim2.new(0, 200, 0, 50)
         notificationLabel.Position = UDim2.new(0.5, -100, 0.8, 0)
         notificationLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -242,14 +363,9 @@ local main = createMainUI()
 
 -- Header
 local header = createLabel(main, "🌸 MAKE BY AI (Full Improved)", UDim2.new(0, 0, 0, 10), Color3.fromRGB(255, 182, 193))
-header.Size = UDim2.new(1, 0, 0, 35)
+header.Size = UDim2.new(1, 0, 0, 40)
+header.TextSize = 20
 header.TextXAlignment = Enum.TextXAlignment.Center
-
--- Content Frame for minimize
-local contentFrame = Instance.new("Frame", main)
-contentFrame.Size = UDim2.new(1, 0, 1, -45)
-contentFrame.Position = UDim2.new(0, 0, 0, 45)
-contentFrame.BackgroundTransparency = 1
 
 -- Nút đóng và minimize
 local closeBtn = Instance.new("TextButton", main)
@@ -277,53 +393,72 @@ local isMinimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     playClickSound()
     isMinimized = not isMinimized
-    contentFrame.Visible = not isMinimized
+    for _, child in ipairs(main:GetChildren()) do
+        if child ~= header and child ~= closeBtn and child ~= minimizeBtn then
+            child.Visible = not isMinimized
+        end
+    end
     minimizeBtn.Text = isMinimized and "+" or "-"
 end)
 
 -- Nội dung
 local maskName = string.sub(LocalPlayer.Name, 1, 3) .. "******"
-createLabel(contentFrame, "Tên: " .. maskName, UDim2.new(0, 15, 0, 5))
-createLabel(contentFrame, "Đơn:", UDim2.new(0, 15, 0, 30), Color3.fromRGB(255, 255, 0))
-local donInp = createTextBox(contentFrame, "don tk", UDim2.new(0, 55, 0, 30), Color3.fromRGB(255, 255, 0))
+createLabel(main, "DEBUG: UI Loaded", UDim2.new(0, 15, 0, 55), Color3.fromRGB(255, 100, 100))
+createLabel(main, "Tên: " .. maskName, UDim2.new(0, 15, 0, 85))
+createLabel(main, "Đơn:", UDim2.new(0, 15, 0, 110), Color3.fromRGB(255, 255, 0))
+local donInp = createTextBox(main, "don tk", UDim2.new(0, 55, 0, 110), Color3.fromRGB(255, 255, 0))
 
-local fpsL = createLabel(contentFrame, "FPS: 0", UDim2.new(0, 15, 0, 60))
-local pingL = createLabel(contentFrame, "Ping: 0 ms", UDim2.new(0, 15, 0, 85))
+local fpsL = createLabel(main, "FPS: 0", UDim2.new(0, 15, 0, 145))
+local pingL = createLabel(main, "Ping: 0 ms", UDim2.new(0, 15, 0, 170))
 
 -- Nút toggle particles
-local particlesBtn = createButton(contentFrame, "Particles: ON ✅", UDim2.new(0, 15, 0, 115), Color3.fromRGB(0, 255, 127))
-particlesBtn.MouseButton1Click:Connect(function() playClickSound(); toggleParticles(particlesBtn) end)
+local particlesBtn = createButton(main, "Particles: ON ✅", UDim2.new(0, 15, 0, 200), Color3.fromRGB(0, 255, 127))
+particlesBtn.MouseButton1Click:Connect(function()
+    playClickSound()
+    toggleParticles(particlesBtn)
+end)
 
 -- Nút toggle shadows
-local shadowsBtn = createButton(contentFrame, "Shadows: ON ✅", UDim2.new(0, 15, 0, 150), Color3.fromRGB(0, 255, 127))
-shadowsBtn.MouseButton1Click:Connect(function() playClickSound(); toggleShadows(shadowsBtn) end)
-
--- Nút tối ưu chính
-local fixLagBtn = createButton(contentFrame, "Fix Lag: TỐI ƯU (OFF) ❌", UDim2.new(0, 15, 0, 185), Color3.fromRGB(255, 69, 0))
-fixLagBtn.MouseButton1Click:Connect(function()
+local shadowsBtn = createButton(main, "Shadows: ON ✅", UDim2.new(0, 15, 0, 235), Color3.fromRGB(0, 255, 127))
+shadowsBtn.MouseButton1Click:Connect(function()
     playClickSound()
+    toggleShadows(shadowsBtn)
+end)
+
+local function toggleFixLag(button)
     optActive = not optActive
     if optActive then
-        fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
-        fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
+        button.Text = "Fix Lag: TỐI ƯU (ON) ✅"
+        button.TextColor3 = Color3.fromRGB(0, 255, 127)
         optimizeGraphics(true)
         showNotification("Tối ưu lag bật")
     else
-        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
-        fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+        button.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
+        button.TextColor3 = Color3.fromRGB(255, 69, 0)
         optimizeGraphics(false)
         showNotification("Tối ưu lag tắt")
     end
+end
+
+-- Nút tối ưu chính
+local fixLagBtn = createButton(main, "Fix Lag: TỐI ƯU (OFF) ❌", UDim2.new(0, 15, 0, 270), Color3.fromRGB(255, 69, 0))
+fixLagBtn.MouseButton1Click:Connect(function()
+    playClickSound()
+    toggleFixLag(fixLagBtn)
 end)
 
 -- Nút reset
-local resetBtn = createButton(contentFrame, "Reset Cài Đặt", UDim2.new(0, 15, 0, 220), Color3.fromRGB(255, 215, 0))
-resetBtn.MouseButton1Click:Connect(function() playClickSound(); resetSettings(particlesBtn, shadowsBtn, fixLagBtn) end)
+local resetBtn = createButton(main, "Reset Cài Đặt", UDim2.new(0, 15, 0, 305), Color3.fromRGB(255, 215, 0))
+resetBtn.MouseButton1Click:Connect(function()
+    playClickSound()
+    resetSettings(particlesBtn, shadowsBtn, fixLagBtn)
+end)
 
 -- Keybind (F key)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.F then
-        fixLagBtn:Fire()  -- Simulate click
+        playClickSound()
+        toggleFixLag(fixLagBtn)
     end
 end)
 
