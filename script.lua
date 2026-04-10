@@ -21,8 +21,8 @@ local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_AI_V60"
 
 -- --- GIAO DIỆN CHÍNH (DRAGGABLE) ---
 local main = Instance.new("Frame", sg)
-main.Size = UDim2.new(0, 260, 0, 190)
-main.Position = UDim2.new(0.5, -130, 0.4, 0)
+main.Size = UDim2.new(0, 300, 0, 230)
+main.Position = UDim2.new(0.5, -150, 0.4, 0)
 main.BackgroundColor3 = Color3.fromRGB(20, 25, 30)
 main.BackgroundTransparency = 0.1
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
@@ -68,7 +68,7 @@ local fpsL = createL("FPS: 0", 90); local pingL = createL("Ping: 0 ms", 115)
 
 -- --- NÚT TỐI ƯU CỰC MẠNH ---
 local fixLagBtn = Instance.new("TextButton", main)
-fixLagBtn.Size = UDim2.new(1, -30, 0, 30); fixLagBtn.Position = UDim2.new(0, 15, 0, 145); fixLagBtn.BackgroundTransparency = 1; fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"; fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0); fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold; fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
+fixLagBtn.Size = UDim2.new(1, -30, 0, 32); fixLagBtn.Position = UDim2.new(0, 15, 0, 155); fixLagBtn.BackgroundTransparency = 1; fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"; fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0); fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold; fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
 
 local optActive = false
 fixLagBtn.MouseButton1Click:Connect(function()
@@ -80,9 +80,11 @@ fixLagBtn.MouseButton1Click:Connect(function()
         Lighting.GlobalShadows = false
         for _, v in pairs(game:GetDescendants()) do
             if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
-                v.Enabled = false
+                pcall(function() v.Enabled = false end)
             elseif v:IsA("BasePart") then
-                v.Material = Enum.Material.SmoothPlastic
+                pcall(function() v.Material = Enum.Material.SmoothPlastic end)
+            elseif v:IsA("Decal") then
+                pcall(function() v.Transparency = 1 end)  -- Tắt decals để giảm texture load
             end
         end
     else
@@ -90,9 +92,11 @@ fixLagBtn.MouseButton1Click:Connect(function()
         settings().Rendering.QualityLevel = 0
         for _, v in pairs(game:GetDescendants()) do
             if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
-                v.Enabled = true
+                pcall(function() v.Enabled = true end)
             elseif v:IsA("BasePart") then
-                v.Material = Enum.Material.Plastic
+                pcall(function() v.Material = Enum.Material.Plastic end)
+            elseif v:IsA("Decal") then
+                pcall(function() v.Transparency = 0 end)
             end
         end
     end
@@ -122,7 +126,7 @@ end)
 
 -- Thêm nút Reset để khôi phục hiệu ứng
 local resetBtn = Instance.new("TextButton", main)
-resetBtn.Size = UDim2.new(1, -30, 0, 25); resetBtn.Position = UDim2.new(0, 15, 0, 180); resetBtn.BackgroundTransparency = 1; resetBtn.Text = "Reset Effects"; resetBtn.TextColor3 = Color3.fromRGB(0, 191, 255); resetBtn.TextSize = 16; resetBtn.Font = Enum.Font.SourceSansBold; resetBtn.TextXAlignment = Enum.TextXAlignment.Left
+resetBtn.Size = UDim2.new(1, -30, 0, 32); resetBtn.Position = UDim2.new(0, 15, 0, 192); resetBtn.BackgroundTransparency = 1; resetBtn.Text = "Reset Effects"; resetBtn.TextColor3 = Color3.fromRGB(0, 191, 255); resetBtn.TextSize = 16; resetBtn.Font = Enum.Font.SourceSansBold; resetBtn.TextXAlignment = Enum.TextXAlignment.Left
 resetBtn.MouseButton1Click:Connect(function()
     if optActive then
         optActive = false
