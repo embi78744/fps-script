@@ -99,12 +99,41 @@ fixLagBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Loop Anti AFK & Stats
-LocalPlayer.Idled:Connect(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
+if LocalPlayer and LocalPlayer.Idled then
+    LocalPlayer.Idled:Connect(function()
+        if VirtualUser then
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end
+    end)
+end
 local lastUp = os.clock(); local f = 0
 RunService.Heartbeat:Connect(function()
     f = f + 1
     if os.clock() - lastUp >= 1 then
-        fpsL.Text = "FPS: " .. f; pingL.Text = string.format("Ping: %.1f ms", Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        if fpsL and pingL then
+            fpsL.Text = "FPS: " .. f
+            local pingValue = Stats and Stats.Network and Stats.Network.ServerStatsItem and Stats.Network.ServerStatsItem["Data Ping"] and Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+            pingL.Text = string.format("Ping: %.1f ms", pingValue or 0)
+        end
         f = 0; lastUp = os.clock()
+    end
+end)
+
+-- Thêm nút Reset để khôi phục hiệu ứng
+local resetBtn = Instance.new("TextButton", main)
+resetBtn.Size = UDim2.new(1, -30, 0, 25); resetBtn.Position = UDim2.new(0, 15, 0, 180); resetBtn.BackgroundTransparency = 1; resetBtn.Text = "Reset Effects"; resetBtn.TextColor3 = Color3.fromRGB(0, 191, 255); resetBtn.TextSize = 16; resetBtn.Font = Enum.Font.SourceSansBold; resetBtn.TextXAlignment = Enum.TextXAlignment.Left
+resetBtn.MouseButton1Click:Connect(function()
+    if optActive then
+        optActive = false
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"; fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+        settings().Rendering.QualityLevel = 0
+        for _, v in pairs(game:GetDescendants()) do
+            if v and v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Fire") or v:IsA("Sparkles") then
+                pcall(function() v.Enabled = true end)
+            elseif v and v:IsA("BasePart") then
+                pcall(function() v.Material = Enum.Material.Plastic end)
+            end
+        end
     end
 end)
