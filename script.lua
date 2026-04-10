@@ -1,22 +1,23 @@
 --[[
-    🌸 NGUOITINHMUADONG - V57 AI EDITION
+    🌸 NGUOITINHMUADONG - V59 AI FINAL
     - Header: MAKE BY AI.
-    - Mặc định Fix Lag là OFF.
-    - UI có thể di chuyển (Draggable).
+    - Đơn: Click vào để sửa chữ trực tiếp.
+    - Fix Lag: Mặc định OFF, bấm để ON.
+    - Hệ thống: Anti AFK ngầm + Draggable UI.
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
-local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
--- Dọn dẹp bản cũ
+-- Xóa UI cũ
 for _, v in pairs(game.CoreGui:GetChildren()) do
-    if v.Name == "NGUOITINH_AI_V57" then v:Destroy() end
+    if v.Name == "NGUOITINH_AI_FINAL" then v:Destroy() end
 end
 
-local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_AI_V57"
+local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_AI_FINAL"
 
 -- --- KHUNG CHÍNH (DI CHUYỂN ĐƯỢC) ---
 local main = Instance.new("Frame", sg)
@@ -32,13 +33,13 @@ stroke.Color = Color3.fromRGB(255, 105, 180); stroke.Thickness = 2.5
 -- Logic Kéo Thả (Draggable)
 local dragging, dragInput, dragStart, startPos
 main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true; dragStart = input.Position; startPos = main.Position
         input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
     end
 end)
 main.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
 end)
 RunService.RenderStepped:Connect(function()
     if dragging and dragInput then
@@ -47,7 +48,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- NỘI DUNG (GIỐNG HỆT ẢNH MẪU) ---
+-- --- NỘI DUNG (GIỐNG ẢNH MẪU) ---
 local header = Instance.new("TextLabel", main)
 header.Size = UDim2.new(1, 0, 0, 35); header.BackgroundTransparency = 1
 header.Text = "🌸 MAKE BY AI"; header.TextColor3 = Color3.fromRGB(255, 182, 193)
@@ -61,14 +62,23 @@ local function createL(txt, y, color)
     return l
 end
 
--- Thông tin tài khoản & Thông số
+-- Tên (Che bảo mật)
 local maskName = string.sub(LocalPlayer.Name, 1, 3) .. "******"
 createL("Tên: " .. maskName, 40)
-local donL = createL("Đơn: don tk", 65, Color3.fromRGB(255, 255, 0))
+
+-- Đơn (Có thể sửa trực tiếp)
+createL("Đơn:", 65, Color3.fromRGB(255, 255, 0))
+local donInput = Instance.new("TextBox", main)
+donInput.Size = UDim2.new(0.6, 0, 0, 25); donInput.Position = UDim2.new(0, 55, 0, 65)
+donInput.BackgroundTransparency = 1; donInput.Text = "don tk"; donInput.TextColor3 = Color3.fromRGB(255, 255, 0)
+donInput.TextSize = 17; donInput.Font = Enum.Font.SourceSansBold; donInput.TextXAlignment = Enum.TextXAlignment.Left
+donInput.ClearTextOnFocus = false
+
+-- Thông số
 local fpsL = createL("FPS: 0", 90)
 local pingL = createL("Ping: 0 ms", 115)
 
--- NÚT FIX LAG (MẶC ĐỊNH OFF)
+-- Nút Fix Lag (Mặc định OFF)
 local fixLagBtn = Instance.new("TextButton", main)
 fixLagBtn.Size = UDim2.new(1, -30, 0, 30); fixLagBtn.Position = UDim2.new(0, 15, 0, 145)
 fixLagBtn.BackgroundTransparency = 1; fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
@@ -87,7 +97,8 @@ fixLagBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CẬP NHẬT FPS/PING
+-- Loop thông số & Anti AFK
+LocalPlayer.Idled:Connect(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
 local lastUpdate = os.clock(); local frames = 0
 RunService.Heartbeat:Connect(function()
     frames = frames + 1
