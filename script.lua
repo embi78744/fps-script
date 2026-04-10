@@ -1,73 +1,97 @@
 --[[
-    🌸 NGUOITINHMUADONG - V48 PINK EDITION
-    - Đổi màu giao diện sang màu Hồng.
-    - Fix triệt để Ping lệch & Lỗi đen màn hình.
+    🌸 NGUOITINHMUADONG - V55 DRAGGABLE CLONE
+    - UI có thể di chuyển (Kéo thả bằng chuột).
+    - Fix Lag: TỐI ƯU (ON/OFF) cực mượt.
+    - Sao chép 100% màu sắc và bố cục từ ảnh mẫu.
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Dọn dẹp bản cũ để tránh đè UI
+-- Xóa UI cũ
 for _, v in pairs(game.CoreGui:GetChildren()) do
-    if v.Name == "NGUOITINH_PINK_V48" then v:Destroy() end
+    if v.Name == "NGUOITINH_DRAG_V55" then v:Destroy() end
 end
 
-local sg = Instance.new("ScreenGui", game.CoreGui)
-sg.Name = "NGUOITINH_PINK_V48"
+local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_DRAG_V55"
 
--- --- GIAO DIỆN OVERLAY (MÀU HỒNG ĐẶC TRƯNG) ---
-local frame = Instance.new("Frame", sg)
-frame.Size = UDim2.new(0, 180, 0, 100)
-frame.Position = UDim2.new(0, 15, 0, 150)
-frame.BackgroundTransparency = 1
+-- --- KHUNG CHÍNH CÓ THỂ DI CHUYỂN ---
+local main = Instance.new("Frame", sg)
+main.Size = UDim2.new(0, 260, 0, 190)
+main.Position = UDim2.new(0.5, -130, 0.4, 0)
+main.BackgroundColor3 = Color3.fromRGB(20, 25, 30)
+main.BackgroundTransparency = 0.1
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 
-local function createLabel(name, yPos)
-    local l = Instance.new("TextLabel", frame)
-    l.Size = UDim2.new(1, 0, 0, 22)
-    l.Position = UDim2.new(0, 0, 0, yPos)
-    
-    -- MÀU HỒNG NEON CHÍNH (HOT PINK)
-    l.TextColor3 = Color3.fromRGB(255, 105, 180) 
-    l.TextSize = 19
-    l.Font = Enum.Font.RobotoMono -- Giữ font kỹ thuật giống hệ thống
-    l.BackgroundTransparency = 1
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- VIỀN CHỮ MÀU HỒNG PHẤN (DEEP PINK) ĐỂ DỄ NHÌN HƠN
-    l.TextStrokeTransparency = 0
-    l.TextStrokeColor3 = Color3.fromRGB(255, 20, 147) 
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(255, 105, 180); stroke.Thickness = 2.5
+
+-- Logic Kéo Thả (Draggable)
+local dragging, dragInput, dragStart, startPos
+main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true; dragStart = input.Position; startPos = main.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
+end)
+main.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+end)
+RunService.RenderStepped:Connect(function()
+    if dragging and dragInput then
+        local delta = dragInput.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- --- NỘI DUNG (GIỐNG ẢNH MẪU) ---
+local header = Instance.new("TextLabel", main)
+header.Size = UDim2.new(1, 0, 0, 35); header.BackgroundTransparency = 1
+header.Text = "🌸 MAKE BY BAANH"; header.TextColor3 = Color3.fromRGB(255, 182, 193)
+header.TextSize = 16; header.Font = Enum.Font.SourceSansBold
+
+local function createL(txt, y, color)
+    local l = Instance.new("TextLabel", main)
+    l.Size = UDim2.new(1, -20, 0, 25); l.Position = UDim2.new(0, 15, 0, y)
+    l.BackgroundTransparency = 1; l.Text = txt; l.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+    l.TextSize = 17; l.Font = Enum.Font.SourceSansBold; l.TextXAlignment = Enum.TextXAlignment.Left
     return l
 end
 
-local fpsLabel = createLabel("FPS", 0)
-local pingLabel = createLabel("Ping", 25)
-local plrLabel = createLabel("Plrs", 50)
+local maskName = string.sub(LocalPlayer.Name, 1, 3) .. "******"
+createL("Tên: " .. maskName, 40)
+local donL = createL("Đơn: don tk", 65, Color3.fromRGB(255, 255, 0))
+local fpsL = createL("FPS: 0", 90)
+local pingL = createL("Ping: 0 ms", 115)
 
--- --- LOGIC ĐO KHỚP 100% HỆ THỐNG ---
-local lastUpdate = os.clock()
-local frames = 0
+-- NÚT FIX LAG ON/OFF
+local fixLagBtn = Instance.new("TextButton", main)
+fixLagBtn.Size = UDim2.new(1, -30, 0, 30); fixLagBtn.Position = UDim2.new(0, 15, 0, 145)
+fixLagBtn.BackgroundTransparency = 1; fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
+fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127); fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold
+fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
 
+local optActive = true
+fixLagBtn.MouseButton1Click:Connect(function()
+    optActive = not optActive
+    if optActive then
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"; fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
+        for _, v in pairs(game:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end end
+    else
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"; fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+    end
+end)
+
+-- CẬP NHẬT THÔNG SỐ
+local lastUpdate = os.clock(); local frames = 0
 RunService.Heartbeat:Connect(function()
     frames = frames + 1
     if os.clock() - lastUpdate >= 1 then
-        fpsLabel.Text = "FPS: " .. frames
-        frames = 0
-        lastUpdate = os.clock()
+        fpsL.Text = "FPS: " .. frames
+        pingL.Text = string.format("Ping: %.1f ms", Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        frames = 0; lastUpdate = os.clock()
     end
-    
-    -- Lấy Ping trực tiếp từ Replicator Stats (Khớp với image_d6615e.png)
-    local systemPing = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-    
-    -- Ping: %.1f ms đẻ hiện 1 chữ số thập phân, VD: 194.5 ms
-    pingLabel.Text = string.format("Ping: %.1f ms", systemPing)
-    
-    plrLabel.Text = "Players: " .. #Players:GetPlayers()
-end)
-
--- Anti AFK
-LocalPlayer.Idled:Connect(function()
-    game:GetService("VirtualUser"):CaptureController()
-    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
 end)
