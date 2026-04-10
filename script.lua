@@ -11,8 +11,18 @@ local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local VirtualUser = game:GetService("VirtualUser")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
+local SoundService = game:GetService("SoundService")
+
+-- Hàm tạo âm thanh click
+local function playClickSound()
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://12221967"  -- ID âm thanh click mặc định
+    sound.Volume = 0.5
+    sound.Parent = SoundService
+    sound:Play()
+    sound.Ended:Wait()
+    sound:Destroy()
+end
 
 -- Biến cache và trạng thái
 local cachedDescendants = {}
@@ -45,8 +55,9 @@ local function createMainUI()
     sg.Name = "NGUOITINH_AI_V60"
 
     local main = Instance.new("Frame", sg)
-    main.Size = UDim2.new(0, 320, 0, 350)  -- Tăng kích thước cho nhiều nút
-    main.Position = UDim2.new(0.5, -160, 0.4, 0)
+    main.Size = UDim2.new(0.25, 0, 0.4, 0)  -- Responsive: 25% width, 40% height
+    main.Position = UDim2.new(0.5, 0, 0.4, 0)
+    main.AnchorPoint = Vector2.new(0.5, 0.4)  -- Center
     main.BackgroundColor3 = Color3.fromRGB(20, 25, 30)
     main.BackgroundTransparency = 0.1
     Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
@@ -234,7 +245,13 @@ local header = createLabel(main, "🌸 MAKE BY AI (Full Improved)", UDim2.new(0,
 header.Size = UDim2.new(1, 0, 0, 35)
 header.TextXAlignment = Enum.TextXAlignment.Center
 
--- Nút đóng
+-- Content Frame for minimize
+local contentFrame = Instance.new("Frame", main)
+contentFrame.Size = UDim2.new(1, 0, 1, -45)
+contentFrame.Position = UDim2.new(0, 0, 0, 45)
+contentFrame.BackgroundTransparency = 1
+
+-- Nút đóng và minimize
 local closeBtn = Instance.new("TextButton", main)
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(1, -30, 0, 10)
@@ -244,29 +261,47 @@ closeBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
 closeBtn.TextSize = 20
 closeBtn.Font = Enum.Font.SourceSansBold
 closeBtn.MouseButton1Click:Connect(function()
+    playClickSound()
     main.Parent:Destroy()
+end)
+
+local minimizeBtn = Instance.new("TextButton", main)
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -60, 0, 10)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
+minimizeBtn.TextSize = 20
+minimizeBtn.Font = Enum.Font.SourceSansBold
+local isMinimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    playClickSound()
+    isMinimized = not isMinimized
+    contentFrame.Visible = not isMinimized
+    minimizeBtn.Text = isMinimized and "+" or "-"
 end)
 
 -- Nội dung
 local maskName = string.sub(LocalPlayer.Name, 1, 3) .. "******"
-createLabel(main, "Tên: " .. maskName, UDim2.new(0, 15, 0, 50))
-createLabel(main, "Đơn:", UDim2.new(0, 15, 0, 75), Color3.fromRGB(255, 255, 0))
-local donInp = createTextBox(main, "don tk", UDim2.new(0, 55, 0, 75), Color3.fromRGB(255, 255, 0))
+createLabel(contentFrame, "Tên: " .. maskName, UDim2.new(0, 15, 0, 5))
+createLabel(contentFrame, "Đơn:", UDim2.new(0, 15, 0, 30), Color3.fromRGB(255, 255, 0))
+local donInp = createTextBox(contentFrame, "don tk", UDim2.new(0, 55, 0, 30), Color3.fromRGB(255, 255, 0))
 
-local fpsL = createLabel(main, "FPS: 0", UDim2.new(0, 15, 0, 105))
-local pingL = createLabel(main, "Ping: 0 ms", UDim2.new(0, 15, 0, 130))
+local fpsL = createLabel(contentFrame, "FPS: 0", UDim2.new(0, 15, 0, 60))
+local pingL = createLabel(contentFrame, "Ping: 0 ms", UDim2.new(0, 15, 0, 85))
 
 -- Nút toggle particles
-local particlesBtn = createButton(main, "Particles: ON ✅", UDim2.new(0, 15, 0, 160), Color3.fromRGB(0, 255, 127))
-particlesBtn.MouseButton1Click:Connect(function() toggleParticles(particlesBtn) end)
+local particlesBtn = createButton(contentFrame, "Particles: ON ✅", UDim2.new(0, 15, 0, 115), Color3.fromRGB(0, 255, 127))
+particlesBtn.MouseButton1Click:Connect(function() playClickSound(); toggleParticles(particlesBtn) end)
 
 -- Nút toggle shadows
-local shadowsBtn = createButton(main, "Shadows: ON ✅", UDim2.new(0, 15, 0, 195), Color3.fromRGB(0, 255, 127))
-shadowsBtn.MouseButton1Click:Connect(function() toggleShadows(shadowsBtn) end)
+local shadowsBtn = createButton(contentFrame, "Shadows: ON ✅", UDim2.new(0, 15, 0, 150), Color3.fromRGB(0, 255, 127))
+shadowsBtn.MouseButton1Click:Connect(function() playClickSound(); toggleShadows(shadowsBtn) end)
 
 -- Nút tối ưu chính
-local fixLagBtn = createButton(main, "Fix Lag: TỐI ƯU (OFF) ❌", UDim2.new(0, 15, 0, 230), Color3.fromRGB(255, 69, 0))
+local fixLagBtn = createButton(contentFrame, "Fix Lag: TỐI ƯU (OFF) ❌", UDim2.new(0, 15, 0, 185), Color3.fromRGB(255, 69, 0))
 fixLagBtn.MouseButton1Click:Connect(function()
+    playClickSound()
     optActive = not optActive
     if optActive then
         fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
@@ -282,8 +317,8 @@ fixLagBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Nút reset
-local resetBtn = createButton(main, "Reset Cài Đặt", UDim2.new(0, 15, 0, 265), Color3.fromRGB(255, 215, 0))
-resetBtn.MouseButton1Click:Connect(function() resetSettings(particlesBtn, shadowsBtn, fixLagBtn) end)
+local resetBtn = createButton(contentFrame, "Reset Cài Đặt", UDim2.new(0, 15, 0, 220), Color3.fromRGB(255, 215, 0))
+resetBtn.MouseButton1Click:Connect(function() playClickSound(); resetSettings(particlesBtn, shadowsBtn, fixLagBtn) end)
 
 -- Keybind (F key)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
