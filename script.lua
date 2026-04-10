@@ -1,8 +1,8 @@
 --[[
-    🌸 NGUOITINHMUADONG - V55 DRAGGABLE CLONE
-    - UI có thể di chuyển (Kéo thả bằng chuột).
-    - Fix Lag: TỐI ƯU (ON/OFF) cực mượt.
-    - Sao chép 100% màu sắc và bố cục từ ảnh mẫu.
+    🌸 NGUOITINHMUADONG - V56 MANUAL OPTIMIZE
+    - Mặc định Fix Lag là OFF (Đồ họa bình thường).
+    - Có thể di chuyển UI (Draggable).
+    - Khi tắt tối ưu, đồ họa sẽ cố gắng quay về mặc định.
 ]]
 
 local Players = game:GetService("Players")
@@ -13,12 +13,12 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Xóa UI cũ
 for _, v in pairs(game.CoreGui:GetChildren()) do
-    if v.Name == "NGUOITINH_DRAG_V55" then v:Destroy() end
+    if v.Name == "NGUOITINH_MANUAL_V56" then v:Destroy() end
 end
 
-local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_DRAG_V55"
+local sg = Instance.new("ScreenGui", game.CoreGui); sg.Name = "NGUOITINH_MANUAL_V56"
 
--- --- KHUNG CHÍNH CÓ THỂ DI CHUYỂN ---
+-- --- KHUNG CHÍNH DI CHUYỂN ĐƯỢC ---
 local main = Instance.new("Frame", sg)
 main.Size = UDim2.new(0, 260, 0, 190)
 main.Position = UDim2.new(0.5, -130, 0.4, 0)
@@ -47,7 +47,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- --- NỘI DUNG (GIỐNG ẢNH MẪU) ---
+-- --- NỘI DUNG ---
 local header = Instance.new("TextLabel", main)
 header.Size = UDim2.new(1, 0, 0, 35); header.BackgroundTransparency = 1
 header.Text = "🌸 MAKE BY BAANH"; header.TextColor3 = Color3.fromRGB(255, 182, 193)
@@ -67,21 +67,36 @@ local donL = createL("Đơn: don tk", 65, Color3.fromRGB(255, 255, 0))
 local fpsL = createL("FPS: 0", 90)
 local pingL = createL("Ping: 0 ms", 115)
 
--- NÚT FIX LAG ON/OFF
+-- NÚT FIX LAG (MẶC ĐỊNH LÀ OFF)
 local fixLagBtn = Instance.new("TextButton", main)
 fixLagBtn.Size = UDim2.new(1, -30, 0, 30); fixLagBtn.Position = UDim2.new(0, 15, 0, 145)
-fixLagBtn.BackgroundTransparency = 1; fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
-fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127); fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold
+fixLagBtn.BackgroundTransparency = 1
+fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
+fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+fixLagBtn.TextSize = 18; fixLagBtn.Font = Enum.Font.SourceSansBold
 fixLagBtn.TextXAlignment = Enum.TextXAlignment.Left
 
-local optActive = true
+local optActive = false 
 fixLagBtn.MouseButton1Click:Connect(function()
     optActive = not optActive
     if optActive then
-        fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"; fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
-        for _, v in pairs(game:GetDescendants()) do if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end end
+        -- KHI BẬT (ON)
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (ON) ✅"
+        fixLagBtn.TextColor3 = Color3.fromRGB(0, 255, 127)
+        settings().Rendering.QualityLevel = 1
+        for _, v in pairs(game:GetDescendants()) do 
+            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end 
+            if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 1 end
+        end
     else
-        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"; fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+        -- KHI TẮT (OFF) - QUAY LẠI BÌNH THƯỜNG
+        fixLagBtn.Text = "Fix Lag: TỐI ƯU (OFF) ❌"
+        fixLagBtn.TextColor3 = Color3.fromRGB(255, 69, 0)
+        settings().Rendering.QualityLevel = 0 -- Auto
+        for _, v in pairs(game:GetDescendants()) do 
+            if v:IsA("BasePart") then v.Material = Enum.Material.Plastic end 
+            if v:IsA("Decal") or v:IsA("Texture") then v.Transparency = 0 end
+        end
     end
 end)
 
