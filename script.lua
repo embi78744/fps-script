@@ -1,10 +1,7 @@
--- Wait until game is loaded
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
+repeat task.wait() until game:IsLoaded()
 
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "Blox Fruits Basic Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "BloxFruitsBasic"})
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/juy9r/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Blox Fruits Basic Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "BloxFruitsBasic", IntroText = "Blox Fruits Hub"})
 
 -- [ Variables ]
 _G.AutoFarm = false
@@ -27,17 +24,12 @@ local function getClosestEnemy()
     local closestEnemy = nil
     local shortestDistance = math.huge
     
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return nil
-    end
-    
     -- Blox Fruits enemies are usually in Workspace.Enemies or Workspace
     local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
     
     for _, v in pairs(enemiesFolder:GetChildren()) do
         if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-            local distance = (v.HumanoidRootPart.Position - character.HumanoidRootPart.Position).magnitude
+            local distance = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).magnitude
             if distance < shortestDistance then
                 shortestDistance = distance
                 closestEnemy = v
@@ -53,7 +45,7 @@ spawn(function()
         if _G.AutoFarm then
             pcall(function()
                 local target = getClosestEnemy()
-                if target and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                if target then
                     -- Teleport slightly above the enemy
                     LocalPlayer.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
                     
@@ -83,23 +75,18 @@ end)
 -- [ Auto Stats Loop ]
 spawn(function()
     while wait(1) do
-        pcall(function()
-            local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
-            if remote then
-                if _G.AutoStatsMelee then
-                    remote:InvokeServer("AddPoint", "Melee", 1)
-                end
-                if _G.AutoStatsDefense then
-                    remote:InvokeServer("AddPoint", "Defense", 1)
-                end
-                if _G.AutoStatsSword then
-                    remote:InvokeServer("AddPoint", "Sword", 1)
-                end
-                if _G.AutoStatsFruit then
-                    remote:InvokeServer("AddPoint", "Demon Fruit", 1)
-                end
-            end
-        end)
+        if _G.AutoStatsMelee then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Melee", 1)
+        end
+        if _G.AutoStatsDefense then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Defense", 1)
+        end
+        if _G.AutoStatsSword then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Sword", 1)
+        end
+        if _G.AutoStatsFruit then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", 1)
+        end
     end
 end)
 
