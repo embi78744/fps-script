@@ -1,9 +1,8 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "Blox Fruits Main Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "BloxFruitsMain"})
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jellybby/Orion-Library/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Blox Fruits Basic Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "BloxFruitsBasic"})
 
 -- [ Variables ]
-_G.AutoFarmLevel = false
-_G.AutoFarmChest = false
+_G.AutoFarm = false
 _G.AutoClick = false
 _G.AutoStatsMelee = false
 _G.AutoStatsDefense = false
@@ -11,169 +10,47 @@ _G.AutoStatsSword = false
 _G.AutoStatsFruit = false
 _G.WalkSpeed = 16
 _G.JumpPower = 50
-_G.SelectWeapon = "Melee"
-_G.AutoBringMob = true
-_G.FastAttack = true
-_G.NoClip = true
 
 -- [ Services ]
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
-local TweenService = game:GetService("TweenService")
 
--- [ Weapon Lists Handler ]
-local function getWeaponsList()
-    local list = {}
-    for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do
-        if v:IsA("Tool") then
-            table.insert(list, v.Name)
-        end
-    end
-    for _, v in pairs(LocalPlayer.Character:GetChildren()) do
-        if v:IsA("Tool") then
-            table.insert(list, v.Name)
-        end
-    end
-    return list
-end
-
--- [ Equip Weapon Function ]
-local function equipWeapon()
-    pcall(function()
-        if _G.SelectWeapon then
-            local tool = LocalPlayer.Backpack:FindFirstChild(_G.SelectWeapon)
-            if tool then
-                LocalPlayer.Character.Humanoid:EquipTool(tool)
+-- [ Functions ]
+local function getClosestEnemy()
+    local closestEnemy = nil
+    local shortestDistance = math.huge
+    
+    -- Blox Fruits enemies are usually in Workspace.Enemies or Workspace
+    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
+    
+    for _, v in pairs(enemiesFolder:GetChildren()) do
+        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+            local distance = (v.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+            if distance < shortestDistance then
+                shortestDistance = distance
+                closestEnemy = v
             end
         end
-    end)
-end
-
--- [ Dynamic Quest Finder based on Level ]
-local function getQuestData()
-    local level = LocalPlayer.Data.Level.Value
-    if level >= 1 and level < 10 then
-        return {QuestName = "BanditQuest1", QuestLevel = 1, MobName = "Bandit", QuestGiver = "Bandit Recruiter", CFrameNPC = CFrame.new(1059.3, 15.4, 1550.6)}
-    elseif level >= 10 and level < 15 then
-        return {QuestName = "JungleQuest", QuestLevel = 1, MobName = "Monkey", QuestGiver = "Adventurer", CFrameNPC = CFrame.new(-1598.1, 35.5, 153.2)}
-    elseif level >= 15 and level < 30 then
-        return {QuestName = "JungleQuest", QuestLevel = 2, MobName = "Gorilla", QuestGiver = "Adventurer", CFrameNPC = CFrame.new(-1598.1, 35.5, 153.2)}
-    elseif level >= 30 and level < 60 then
-        return {QuestName = "PirateQuest", QuestLevel = 1, MobName = "Pirate", QuestGiver = "Pirate Adventurer", CFrameNPC = CFrame.new(-1141.1, 4.2, 3827.1)}
-    elseif level >= 60 and level < 75 then
-        return {QuestName = "PirateQuest", QuestLevel = 2, MobName = "Brute", QuestGiver = "Pirate Adventurer", CFrameNPC = CFrame.new(-1141.1, 4.2, 3827.1)}
-    elseif level >= 75 and level < 90 then
-        return {QuestName = "DesertQuest", QuestLevel = 1, MobName = "Desert Bandit", QuestGiver = "Desert Adventurer", CFrameNPC = CFrame.new(894.4, 6.4, 4384.7)}
-    elseif level >= 90 and level < 120 then
-        return {QuestName = "DesertQuest", QuestLevel = 2, MobName = "Desert Officer", QuestGiver = "Desert Adventurer", CFrameNPC = CFrame.new(894.4, 6.4, 4384.7)}
-    elseif level >= 120 and level < 150 then
-        return {QuestName = "SnowQuest", QuestLevel = 1, MobName = "Snow Bandit", QuestGiver = "Snow Adventurer", CFrameNPC = CFrame.new(1386.1, 87.2, -1298.1)}
-    else
-        -- Fallback default for higher levels (Dynamic system can be scaled further)
-        return {QuestName = "BanditQuest1", QuestLevel = 1, MobName = "Bandit", QuestGiver = "Bandit Recruiter", CFrameNPC = CFrame.new(1059.3, 15.4, 1550.6)}
     end
+    return closestEnemy
 end
 
--- [ Safe Tween / Teleport ]
-local function toTarget(targetCFrame)
-    pcall(function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - targetCFrame.Position).Magnitude
-            if dist > 300 then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
-            else
-                local tween = TweenService:Create(
-                    LocalPlayer.Character.HumanoidRootPart,
-                    TweenInfo.new(dist / 250, Enum.EasingStyle.Linear),
-                    {CFrame = targetCFrame}
-                )
-                tween:Play()
-                tween.Completed:Wait()
-            end
-        end
-    end)
-end
-
--- [ Bring Mobs Function ]
-local function bringMobs(mobName, targetCFrame)
-    if not _G.AutoBringMob then return end
-    pcall(function()
-        local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-        for _, v in pairs(enemiesFolder:GetChildren()) do
-            if v:IsA("Model") and v.Name == mobName and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                if (v.HumanoidRootPart.Position - targetCFrame.Position).Magnitude < 250 then
-                    v.HumanoidRootPart.CFrame = targetCFrame
-                    v.HumanoidRootPart.CanCollide = false
-                    if v.Humanoid:GetState() ~= Enum.HumanoidStateType.Physics then
-                        v.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- [ Auto Farm Quest Loop ]
-spawn(function()
-    while wait(0.1) do
-        if _G.AutoFarmLevel then
-            pcall(function()
-                local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
-                local data = getQuestData()
-                
-                if not hasQuest then
-                    -- Go take quest
-                    toTarget(data.CFrameNPC)
-                    wait(0.5)
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", data.QuestName, data.QuestLevel)
-                else
-                    -- Farm target mobs
-                    local targetMob = nil
-                    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace
-                    for _, v in pairs(enemiesFolder:GetChildren()) do
-                        if v:IsA("Model") and v.Name == data.MobName and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            targetMob = v
-                            break
-                        end
-                    end
-                    
-                    if not targetMob then
-                        -- Go to mob spawn point if none currently exists in folder
-                        local spawnPart = workspace._WorldOrigin.EnemySpawns:FindFirstChild(data.MobName)
-                        if spawnPart then
-                            toTarget(spawnPart.CFrame * CFrame.new(0, 10, 0))
-                        end
-                    else
-                        equipWeapon()
-                        -- Position above target
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = targetMob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
-                        
-                        -- Gather other mobs
-                        bringMobs(data.MobName, targetMob.HumanoidRootPart.CFrame)
-                        
-                        -- Click attack logic
-                        if _G.FastAttack then
-                            VirtualUser:CaptureController()
-                            VirtualUser:ClickButton1(Vector2.new(1280, 720))
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- [ Auto Chest Farm ]
+-- [ Auto Farm Loop ]
 spawn(function()
     while wait() do
-        if _G.AutoFarmChest then
+        if _G.AutoFarm then
             pcall(function()
-                for _, v in pairs(workspace:GetChildren()) do
-                    if v.Name:find("Chest") and v:IsA("Part") then
-                        toTarget(v.CFrame)
-                        wait(0.2)
+                local target = getClosestEnemy()
+                if target then
+                    -- Teleport slightly above the enemy
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+                    
+                    -- Equipping Tool if not equipped
+                    local tool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+                    if tool then
+                        LocalPlayer.Character.Humanoid:EquipTool(tool)
                     end
                 end
             end)
@@ -183,27 +60,11 @@ end)
 
 -- [ Auto Click Loop ]
 spawn(function()
-    while wait(0.05) do
-        if _G.AutoClick then
+    while wait(0.1) do
+        if _G.AutoFarm or _G.AutoClick then
             pcall(function()
-                equipWeapon()
                 VirtualUser:CaptureController()
                 VirtualUser:ClickButton1(Vector2.new(1280, 720))
-            end)
-        end
-    end
-end)
-
--- [ NoClip Loop to bypass ground collisions ]
-spawn(function()
-    while wait() do
-        if _G.AutoFarmLevel or _G.AutoFarmChest or _G.NoClip then
-            pcall(function()
-                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if v:IsA("BasePart") then
-                        v.CanCollide = false
-                    end
-                end
             end)
         end
     end
@@ -260,18 +121,10 @@ local PlayerTab = Window:MakeTab({
 
 -- [ Farming Tab Elements ]
 FarmTab:AddToggle({
-	Name = "Auto Farm Level (Main)",
+	Name = "Auto Farm Closest Enemies",
 	Default = false,
 	Callback = function(Value)
-		_G.AutoFarmLevel = Value
-	end    
-})
-
-FarmTab:AddToggle({
-	Name = "Auto Farm Chests",
-	Default = false,
-	Callback = function(Value)
-		_G.AutoFarmChest = Value
+		_G.AutoFarm = Value
 	end    
 })
 
@@ -280,23 +133,6 @@ FarmTab:AddToggle({
 	Default = false,
 	Callback = function(Value)
 		_G.AutoClick = Value
-	end    
-})
-
-FarmTab:AddDropdown({
-	Name = "Select Weapon",
-	Default = "Melee",
-	Options = {"Melee", "Sword", "Fruit"},
-	Callback = function(Value)
-		_G.SelectWeapon = Value
-	end    
-})
-
-FarmTab:AddToggle({
-	Name = "Bring Mobs",
-	Default = true,
-	Callback = function(Value)
-		_G.AutoBringMob = Value
 	end    
 })
 
@@ -357,14 +193,6 @@ PlayerTab:AddSlider({
 	ValueName = "Jump",
 	Callback = function(Value)
 		_G.JumpPower = Value
-	end    
-})
-
-PlayerTab:AddToggle({
-	Name = "Noclip Mode",
-	Default = true,
-	Callback = function(Value)
-		_G.NoClip = Value
 	end    
 })
 
