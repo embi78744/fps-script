@@ -1,4 +1,4 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jellybby/Orion-Library/main/source')))()
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jellybanyn/Hub/main/Orion'))()
 local Window = OrionLib:MakeWindow({Name = "Blox Fruits Basic Hub", HidePremium = false, SaveConfig = true, ConfigFolder = "BloxFruitsBasic"})
 
 -- [ Variables ]
